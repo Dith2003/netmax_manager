@@ -1,0 +1,7 @@
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          # Guarda las fechas como texto legible (ISO-8601) en la base de datos.
+          store_date_time_values_as_text: true
