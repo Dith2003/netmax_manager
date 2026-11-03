@@ -29,10 +29,13 @@ lib/
   data/
     db/          # database.dart (tablas drift + AppDatabase), enums.dart
     repositories/  # clientes_repository.dart (clientes, estados, instalaciones, equipos)
+                   # pagos_repository.dart (saldos por mes, registrar/cancelar pago, historial)
   providers/     # providers.dart: databaseProvider (se inyecta en main) y StreamProviders
-  screens/       # una carpeta por módulo: clientes/ (lista, formulario, ficha, diálogos)
+  screens/       # una carpeta por módulo: clientes/ (lista, formulario, ficha, diálogos),
+                 # pagos/ (registrar pago con vista previa del reparto)
   widgets/       # comunes.dart (EstadoChip, ErrorVista, SeccionTitulo, mostrarMensaje)
-  routes/        # app_router.dart (go_router): /clientes, /clientes/nuevo, /clientes/:id, /clientes/:id/editar
+  routes/        # app_router.dart (go_router): /clientes, /clientes/nuevo, /clientes/:id, /clientes/:id/editar,
+                 # /clientes/:id/pago
 docs/
   schema.sql     # referencia original; la fuente de verdad es lib/data/db/database.dart
 ```
@@ -51,6 +54,9 @@ docs/
    Si el equipo es prestado, debe quedar registrado en `equipos` para su recuperación.
 7. Los montos se guardan en **centavos (enteros)**, nunca en `double`.
 8. Nada se borra físicamente: clientes y pagos se cancelan/desactivan (auditoría).
+9. El primer mes de servicio es el mes de la **fecha de alta**. Un pago crea los meses
+   adelantados que necesite (máximo 24 por pago). Los pagos cancelados no cuentan en saldos;
+   sus meses vuelven a quedar pendientes. No se registran pagos a clientes cancelados.
 
 ## Convenciones
 - Código y nombres de tablas en español sin acentos (`clientes`, `fecha_pago`).
@@ -80,7 +86,7 @@ docs/
 ## Roadmap v1.0
 - [x] Sprint 1: proyecto Flutter + base de datos drift + lógica de cobranza con pruebas
 - [x] Sprint 2: Clientes (+ instalaciones y equipos, historial de estados)
-- [ ] Sprint 3: Pagos
+- [x] Sprint 3: Pagos (reparto automático con vista previa, abonos, adelantos, cancelación)
 - [ ] Sprint 4: Vencimientos y adeudos
 - [ ] Sprint 5: Dashboard
 - [ ] Sprint 6: Reportes
