@@ -22,15 +22,17 @@ Aplicación para administrar NetMAX, un negocio familiar de servicio de internet
 ## Estructura
 ```
 lib/
-  core/          # dinero.dart (centavos), mes.dart (clase Mes 'YYYY-MM'), tema
-  domain/        # reglas puras sin BD: cobranza.dart (aplicarPago, calcularAdeudo, pagadoHasta)
+  core/          # dinero.dart (centavos), mes.dart (clase Mes 'YYYY-MM'), fechas.dart,
+                 # etiquetas.dart (textos en español de los enums)
+  domain/        # reglas puras sin BD: cobranza.dart (aplicarPago, calcularAdeudo, pagadoHasta),
+                 # clientes.dart (búsqueda sin acentos, validaciones de formulario)
   data/
     db/          # database.dart (tablas drift + AppDatabase), enums.dart
-    repositories/
-  providers/     # Riverpod
-  screens/       # una carpeta por módulo
-  widgets/       # componentes reutilizables
-  routes/
+    repositories/  # clientes_repository.dart (clientes, estados, instalaciones, equipos)
+  providers/     # providers.dart: databaseProvider (se inyecta en main) y StreamProviders
+  screens/       # una carpeta por módulo: clientes/ (lista, formulario, ficha, diálogos)
+  widgets/       # comunes.dart (EstadoChip, ErrorVista, SeccionTitulo, mostrarMensaje)
+  routes/        # app_router.dart (go_router): /clientes, /clientes/nuevo, /clientes/:id, /clientes/:id/editar
 docs/
   schema.sql     # referencia original; la fuente de verdad es lib/data/db/database.dart
 ```
@@ -62,10 +64,22 @@ docs/
 - Toda lógica de cálculo (vencimientos, adeudos) va en repositorios/servicios con
   pruebas unitarias, nunca en los widgets.
 - Antes de dar algo por terminado: `flutter analyze` y `flutter test` sin errores.
+  `flutter analyze` falla también con avisos "info": deben quedar en cero.
+- Pruebas: lógica pura en `test/*_test.dart`; repositorios con `AppDatabase(NativeDatabase.memory())`;
+  pantallas con providers simulados (`overrideWith`), **sin BD real** (drift + reloj simulado se cuelga).
+- Usar APIs actuales de Flutter: `DropdownButtonFormField(initialValue:)` (no `value:`), sin `RadioListTile`
+  con `groupValue` (obsoleto). Interfaz en español; fechas con `core/fechas.dart` (no se usa intl).
+- Historial y fechas automáticas: guardar `DateTime.now()` explícito (no `currentDateAndTime`, que es UTC).
+
+## Flujo de trabajo
+- Cada sprint en una rama (`sprint-N/nombre`) con Pull Request hacia `main`. La dueña revisa,
+  prueba en su equipo (`git fetch` + `git checkout <rama>` + `flutter pub get` + `flutter run -d windows`) y hace merge.
+- GitHub Actions (`.github/workflows/ci.yml`) corre build_runner, `flutter analyze` y `flutter test`
+  con Flutter 3.47.9 en cada PR. Claude no puede ejecutar Flutter en su entorno: el CI es la verificación.
 
 ## Roadmap v1.0
 - [x] Sprint 1: proyecto Flutter + base de datos drift + lógica de cobranza con pruebas
-- [ ] Sprint 2: Clientes (+ instalaciones y equipos)
+- [x] Sprint 2: Clientes (+ instalaciones y equipos, historial de estados)
 - [ ] Sprint 3: Pagos
 - [ ] Sprint 4: Vencimientos y adeudos
 - [ ] Sprint 5: Dashboard

@@ -1,3 +1,7 @@
+// Las reglas check() de drift se declaran haciendo referencia a la propia columna
+// (p. ej. diaCorte.isBetweenValues), es el patrón documentado por drift.
+// ignore_for_file: recursive_getters
+
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
