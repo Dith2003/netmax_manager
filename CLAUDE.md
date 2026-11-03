@@ -22,8 +22,8 @@ Aplicación para administrar NetMAX, un negocio familiar de servicio de internet
 ## Estructura
 ```
 lib/
-  core/          # dinero.dart (centavos), mes.dart (clase Mes 'YYYY-MM'), tema
-  core/          # también: fechas.dart (formatos dd/mm/aaaa), etiquetas.dart (textos de enums)
+  core/          # dinero.dart (centavos), mes.dart (clase Mes 'YYYY-MM'), fechas.dart,
+                 # etiquetas.dart (textos en español de los enums)
   domain/        # reglas puras sin BD: cobranza.dart (aplicarPago, calcularAdeudo, pagadoHasta),
                  # clientes.dart (búsqueda sin acentos, validaciones de formulario)
   data/
