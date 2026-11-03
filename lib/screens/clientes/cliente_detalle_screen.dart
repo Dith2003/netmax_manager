@@ -7,6 +7,7 @@ import '../../core/etiquetas.dart';
 import '../../core/fechas.dart';
 import '../../data/db/database.dart';
 import '../../domain/clientes.dart';
+import '../../domain/cobranza.dart';
 import '../../providers/providers.dart';
 import '../../widgets/comunes.dart';
 import 'dialogos.dart';
@@ -96,8 +97,15 @@ class _Ficha extends ConsumerWidget {
           ),
         ],
       ),
+      floatingActionButton: cliente.estado == EstadoCliente.cancelado
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () => context.push('/clientes/${cliente.id}/pago'),
+              icon: const Icon(Icons.payments),
+              label: const Text('Registrar pago'),
+            ),
       body: ListView(
-        padding: const EdgeInsets.only(bottom: 32),
+        padding: const EdgeInsets.only(bottom: 88),
         children: [
           _AvisoEquipoPrestado(cliente: cliente),
           Card(
@@ -132,6 +140,7 @@ class _Ficha extends ConsumerWidget {
               ),
             ),
           ),
+          _SeccionPagos(cliente: cliente),
           _SeccionInstalaciones(clienteId: cliente.id),
           _SeccionEquipos(cliente: cliente),
           _SeccionHistorial(clienteId: cliente.id),
@@ -207,6 +216,96 @@ class _AvisoEquipoPrestado extends ConsumerWidget {
             }
           },
           child: const Text('Registrar equipo'),
+        ),
+      ],
+    );
+  }
+}
+
+class _SeccionPagos extends ConsumerWidget {
+  const _SeccionPagos({required this.cliente});
+
+  final Cliente cliente;
+
+  Future<void> _cancelar(BuildContext context, WidgetRef ref, Pago pago) async {
+    final motivo = await confirmarCancelarPago(context, monto: formatoDinero(pago.monto));
+    if (motivo == null) return;
+    await ref
+        .read(pagosRepositoryProvider)
+        .cancelarPago(pago.id, motivo: motivo.isEmpty ? null : motivo);
+    if (context.mounted) mostrarMensaje(context, 'Pago cancelado');
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final periodos = ref.watch(periodosProvider(cliente.id));
+    final pagos = ref.watch(pagosProvider(cliente.id));
+    final scheme = Theme.of(context).colorScheme;
+
+    final resumen = periodos.when(
+      loading: () => const LinearProgressIndicator(),
+      error: (e, _) => ErrorVista(e),
+      data: (lista) {
+        final hasta = pagadoHasta(lista);
+        final adeudo = calcularAdeudo(lista, DateTime.now());
+        return ListTile(
+          leading: Icon(
+            adeudo.tieneAdeudo ? Icons.warning_amber : Icons.verified,
+            color: adeudo.tieneAdeudo ? scheme.error : Colors.green,
+          ),
+          title: Text(hasta == null ? 'Sin meses pagados' : 'Pagado hasta ${hasta.nombre}'),
+          subtitle: Text(adeudo.tieneAdeudo
+              ? 'Debe ${formatoDinero(adeudo.total)} '
+                  '(${adeudo.meses} ${adeudo.meses == 1 ? 'mes vencido' : 'meses vencidos'})'
+              : 'Al corriente'),
+        );
+      },
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SeccionTitulo('Pagos'),
+        resumen,
+        pagos.when(
+          loading: () => const SizedBox.shrink(),
+          error: (e, _) => ErrorVista(e),
+          data: (lista) {
+            if (lista.isEmpty) return const _Vacio('Sin pagos registrados');
+            return Column(
+              children: [
+                for (final p in lista)
+                  ListTile(
+                    leading: Icon(
+                      p.pago.cancelado ? Icons.block : Icons.receipt_long,
+                      color: p.pago.cancelado ? scheme.outline : null,
+                    ),
+                    title: Text(
+                      '${formatoDinero(p.pago.monto)} · ${p.pago.metodo.etiqueta}',
+                      style: p.pago.cancelado
+                          ? const TextStyle(decoration: TextDecoration.lineThrough)
+                          : null,
+                    ),
+                    subtitle: Text([
+                      formatoFechaCorta(p.pago.fechaPago),
+                      if (p.meses.isNotEmpty)
+                        'Cubre ${describirMeses(p.meses.map((m) => m.mes).toList())}',
+                      if (p.pago.folio != null) 'Folio ${p.pago.folio}',
+                      if (p.pago.cancelado) 'CANCELADO',
+                    ].join(' · ')),
+                    trailing: p.pago.cancelado
+                        ? null
+                        : PopupMenuButton<String>(
+                            tooltip: 'Opciones',
+                            onSelected: (_) => _cancelar(context, ref, p.pago),
+                            itemBuilder: (_) => const [
+                              PopupMenuItem(value: 'cancelar', child: Text('Cancelar pago')),
+                            ],
+                          ),
+                  ),
+              ],
+            );
+          },
         ),
       ],
     );

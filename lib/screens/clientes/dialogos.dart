@@ -354,3 +354,43 @@ Future<String?> confirmarCambioEstado(
     ),
   );
 }
+
+/// Pide confirmación para cancelar un pago capturado por error.
+/// Devuelve el motivo ('' si no escribió nada) o null si no se canceló.
+Future<String?> confirmarCancelarPago(BuildContext context, {required String monto}) {
+  final motivo = TextEditingController();
+  return showDialog<String>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text('Cancelar pago de $monto'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'El pago no se borra: queda marcado como cancelado y los meses que '
+            'cubría vuelven a quedar pendientes.',
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: motivo,
+            decoration: const InputDecoration(
+              labelText: 'Motivo (opcional)',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Volver'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(motivo.text.trim()),
+          child: const Text('Cancelar pago'),
+        ),
+      ],
+    ),
+  );
+}
