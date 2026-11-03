@@ -45,7 +45,7 @@ docs/
    La relación vive en `pago_aplicaciones` (permite pagos parciales).
 4. Un periodo puede marcarse como **cortesía** (monto $0, no genera adeudo).
 5. **Adeudo** = suma de periodos vencidos no pagados por completo.
-6. Tipos de contratación: `compra_equipo`, `equipo_propio`, `equipo_prestado`.
+6. Tipos de contratación: `compraEquipo`, `equipoPropio`, `equipoPrestado`.
    Si el equipo es prestado, debe quedar registrado en `equipos` para su recuperación.
 7. Los montos se guardan en **centavos (enteros)**, nunca en `double`.
 8. Nada se borra físicamente: clientes y pagos se cancelan/desactivan (auditoría).
