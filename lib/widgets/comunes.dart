@@ -61,7 +61,7 @@ class SeccionTitulo extends StatelessWidget {
           Expanded(
             child: Text(titulo, style: Theme.of(context).textTheme.titleMedium),
           ),
-          if (accion != null) accion!,
+          ?accion,
         ],
       ),
     );
