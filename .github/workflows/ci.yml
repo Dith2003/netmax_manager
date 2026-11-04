@@ -61,3 +61,14 @@ jobs:
           base64 -w0 /tmp/capturas.tgz
           echo
           echo "FIN_CAPTURAS"
+
+      - name: Subir capturas como artefacto
+        if: ${{ !cancelled() && steps.codigo.outcome == 'success' }}
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: capturas
+          path: |
+            test/capturas/*.png
+            build/capturas/*.png
+          retention-days: 14
