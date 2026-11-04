@@ -31,7 +31,7 @@ bool verificarPin(String pin, String guardado) {
 }
 
 String _huella(String pin, String sal) {
-  var bytes = utf8.encode('$sal:$pin');
+  List<int> bytes = utf8.encode('$sal:$pin');
   for (var i = 0; i < _vueltas; i++) {
     bytes = sha256.convert(bytes).bytes;
   }
