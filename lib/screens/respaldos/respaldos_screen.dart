@@ -11,7 +11,7 @@ import '../../data/respaldos/respaldo_service.dart';
 import '../../providers/providers.dart';
 import '../../widgets/comunes.dart';
 
-const _tipoRespaldo = XTypeGroup(label: 'Respaldo de NetMAX', extensions: ['db']);
+const _tipoRespaldo = XTypeGroup(label: 'Respaldo de NET_MAX', extensions: ['db']);
 
 /// Crear y restaurar respaldos de toda la información de la app.
 class RespaldosScreen extends ConsumerStatefulWidget {
@@ -47,8 +47,8 @@ class _RespaldosScreenState extends ConsumerState<RespaldosScreen> {
             await SharePlus.instance.share(ShareParams(
               files: [XFile(temporal, mimeType: 'application/octet-stream')],
               fileNameOverrides: [nombre],
-              subject: 'Respaldo NetMAX',
-              text: 'Respaldo de NetMAX del ${formatoFecha(DateTime.now())}',
+              subject: 'Respaldo NET_MAX',
+              text: 'Respaldo de NET_MAX del ${formatoFecha(DateTime.now())}',
             ));
             if (mounted) mostrarMensaje(context, 'Respaldo creado: $nombre');
           } else {

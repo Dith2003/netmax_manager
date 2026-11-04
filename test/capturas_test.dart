@@ -11,6 +11,7 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show debugDisableShadows;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -253,6 +254,9 @@ Future<void> _capturar(
   String ruta, {
   Size tamano = const Size(412, 915),
 }) async {
+  // En las pruebas las sombras se dibujan como un borde negro; aquí se quieren reales.
+  debugDisableShadows = false;
+  addTearDown(() => debugDisableShadows = true);
   tester.view.physicalSize = tamano * 2;
   tester.view.devicePixelRatio = 2;
   addTearDown(tester.view.reset);
@@ -263,7 +267,14 @@ Future<void> _capturar(
   ));
   await tester.pumpAndSettle();
   if (ruta != '/inicio') {
-    GoRouter.of(tester.element(find.byType(Scaffold).first)).push(ruta);
+    final router = GoRouter.of(tester.element(find.byType(Scaffold).first));
+    // Las secciones principales se abren como pestaña; el resto, encima.
+    const secciones = ['/clientes', '/adeudos', '/reportes'];
+    if (secciones.contains(ruta)) {
+      router.go(ruta);
+    } else {
+      router.push(ruta);
+    }
     await tester.pumpAndSettle();
   }
   // Las imágenes del logo se decodifican fuera del reloj simulado.

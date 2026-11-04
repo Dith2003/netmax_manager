@@ -8,7 +8,7 @@ extension EtiquetaTipoContratacion on TipoContratacion {
   String get etiqueta => switch (this) {
         TipoContratacion.compraEquipo => 'Compra de equipo + instalación',
         TipoContratacion.equipoPropio => 'Equipo propio (solo conexión)',
-        TipoContratacion.equipoPrestado => 'Equipo prestado por NetMAX',
+        TipoContratacion.equipoPrestado => 'Equipo prestado por NET_MAX',
       };
 
   String get etiquetaCorta => switch (this) {
@@ -29,7 +29,7 @@ extension EtiquetaEstadoCliente on EstadoCliente {
 extension EtiquetaPropiedadEquipo on PropiedadEquipo {
   String get etiqueta => switch (this) {
         PropiedadEquipo.cliente => 'Del cliente',
-        PropiedadEquipo.netmax => 'De NetMAX',
+        PropiedadEquipo.netmax => 'De NET_MAX',
       };
 }
 

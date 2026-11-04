@@ -22,7 +22,7 @@ class InfoRespaldo {
   final DateTime? ultimoPago;
 }
 
-/// El archivo elegido no es un respaldo válido de NetMAX.
+/// El archivo elegido no es un respaldo válido de NET_MAX.
 class RespaldoNoValido implements Exception {
   const RespaldoNoValido(this.mensaje);
 
@@ -73,7 +73,7 @@ class RespaldoService {
         .map((c) => c == null ? null : DateTime.tryParse(c.valor));
   }
 
-  /// Revisa que [ruta] sea un respaldo de NetMAX que esta versión de la app
+  /// Revisa que [ruta] sea un respaldo de NET_MAX que esta versión de la app
   /// pueda abrir. Lanza [RespaldoNoValido] con el motivo si no lo es.
   static InfoRespaldo validar(String ruta, {required int versionApp}) {
     if (!File(ruta).existsSync()) {
@@ -90,7 +90,7 @@ class RespaldoService {
       try {
         integridad = bd.select('PRAGMA integrity_check').first.values.first.toString();
       } on Object {
-        throw const RespaldoNoValido('El archivo no es una base de datos de NetMAX.');
+        throw const RespaldoNoValido('El archivo no es una base de datos de NET_MAX.');
       }
       if (integridad != 'ok') {
         throw const RespaldoNoValido('El archivo está dañado.');
@@ -101,12 +101,12 @@ class RespaldoService {
           .map((f) => f['name'] as String)
           .toSet();
       if (!tablas.containsAll(['clientes', 'pagos', 'periodos'])) {
-        throw const RespaldoNoValido('El archivo no es un respaldo de NetMAX.');
+        throw const RespaldoNoValido('El archivo no es un respaldo de NET_MAX.');
       }
 
       final version = bd.select('PRAGMA user_version').first.values.first as int;
       if (version < 1) {
-        throw const RespaldoNoValido('El archivo no es un respaldo de NetMAX.');
+        throw const RespaldoNoValido('El archivo no es un respaldo de NET_MAX.');
       }
       if (version > versionApp) {
         throw const RespaldoNoValido(

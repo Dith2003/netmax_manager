@@ -58,12 +58,14 @@ class _Contenido extends StatelessWidget {
     return LayoutBuilder(builder: (context, constraints) {
       // 3 indicadores por fila en pantallas anchas, 1 en teléfono.
       const espacio = 12.0;
-      final ancho = constraints.maxWidth - 32;
+      // En pantallas grandes el contenido no pasa de 1100 px de ancho.
+      final ancho = (constraints.maxWidth > 1132 ? 1100.0 : constraints.maxWidth - 32);
+      final margen = (constraints.maxWidth - ancho) / 2;
       final porFila = ancho >= 720 ? 3 : (ancho >= 480 ? 2 : 1);
       final anchoTarjeta = (ancho - espacio * (porFila - 1)) / porFila;
 
       return ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.symmetric(horizontal: margen, vertical: 16),
         children: [
           if (recordarRespaldo) ...[
             Card(
