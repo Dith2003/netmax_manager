@@ -248,7 +248,7 @@ class _OpcionUsuario extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(usuario.nombre, style: Theme.of(context).textTheme.titleSmall),
-                    Text('${usuario.usuario} · ${etiquetaRol(usuario.rol)}',
+                    Text('${usuario.usuario} · ${etiquetaPerfil(usuario)}',
                         style: Theme.of(context).textTheme.bodySmall),
                   ],
                 ),
@@ -262,11 +262,8 @@ class _OpcionUsuario extends StatelessWidget {
   }
 }
 
-/// "Propietario" / "Administrador".
-String etiquetaRol(RolUsuario rol) => switch (rol) {
-      RolUsuario.propietario => 'Propietario',
-      RolUsuario.admin => 'Administrador',
-    };
+/// "Propietario", "Administrador" o "Personalizado" según sus permisos.
+String etiquetaPerfil(Usuario u) => nombrePerfil(permisosDeUsuario(u));
 
 // ---------------------------------------------------------------------------
 // Primer usuario
@@ -303,7 +300,7 @@ class _PrimerUsuarioState extends ConsumerState<_PrimerUsuario> {
       await repo.crear(DatosUsuario(
         nombre: _nombre.text,
         usuario: _usuario.text,
-        rol: RolUsuario.propietario,
+        permisos: PerfilBase.propietario.permisos,
         pin: _pin.text.trim(),
       ));
       final usuario = await repo.autenticar(_usuario.text, _pin.text.trim());

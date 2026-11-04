@@ -449,6 +449,13 @@ void main() {
       (tester) => _capturar(tester, '30_primer_usuario_celular', '/inicio',
           conSesion: false, usuarios: const []),
       skip: !_activo);
+  testWidgets('captura 32_usuario_permisos',
+      (tester) => _capturar(tester, '32_usuario_permisos', '/configuracion',
+          tamano: const Size(1366, 1100), despues: (tester) async {
+        await tester.tap(find.byTooltip('Editar permisos o cambiar PIN').last);
+        await tester.pumpAndSettle();
+      }),
+      skip: !_activo);
   testWidgets('captura 31_ficha_pestana_equipos',
       (tester) => _capturar(tester, '31_ficha_pestana_equipos', '/clientes',
           tamano: escritorio, tocar: find.text('Ana López Martínez'), despues: (tester) async {

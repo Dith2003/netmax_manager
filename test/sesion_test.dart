@@ -61,14 +61,26 @@ void main() {
       expect(bloqueadoHasta(fallidos: 5, ultimoFallo: ahora), ahora.add(espera));
     });
 
-    test('el administrador tiene permisos limitados', () {
-      final admin = permisosDe(RolUsuario.admin);
+    test('perfiles base y permisos individuales', () {
+      final admin = Permisos(PerfilBase.administrador.permisos);
+      expect(admin.registrarPagos && admin.gestionarClientes && admin.verReportes, isTrue);
       expect(admin.configurar, isFalse);
       expect(admin.restaurarRespaldos, isFalse);
       expect(admin.cancelarPagos, isFalse);
       expect(admin.administrarUsuarios, isFalse);
-      final propietario = permisosDe(RolUsuario.propietario);
-      expect(propietario.configurar && propietario.cancelarPagos, isTrue);
+      expect(PerfilBase.propietario.permisos, Permiso.values.toSet());
+
+      // Se guardan y se leen por nombre.
+      const algunos = {Permiso.registrarPagos, Permiso.verReportes};
+      expect(guardarPermisos(algunos), 'registrarPagos,verReportes');
+      expect(leerPermisos('registrarPagos,verReportes,inexistente', RolUsuario.admin), algunos);
+      // Usuarios de antes (sin permisos guardados): los de su perfil.
+      expect(leerPermisos(null, RolUsuario.admin), PerfilBase.administrador.permisos);
+      expect(leerPermisos(null, RolUsuario.propietario), Permiso.values.toSet());
+
+      expect(nombrePerfil(Permiso.values.toSet()), 'Propietario');
+      expect(nombrePerfil(PerfilBase.administrador.permisos), 'Administrador');
+      expect(nombrePerfil(algunos), 'Personalizado');
     });
   });
 
@@ -83,29 +95,31 @@ void main() {
     tearDown(() => db.close());
 
     test('el primer usuario es propietario y entra con su PIN', () async {
-      await repo.crear(const DatosUsuario(
-          nombre: 'Edith', usuario: ' Edith ', rol: RolUsuario.admin, pin: '2580'));
+      await repo.crear(DatosUsuario(
+          nombre: 'Edith', usuario: ' Edith ', permisos: PerfilBase.administrador.permisos, pin: '2580'));
       final edith = await repo.autenticar('edith', '2580');
-      expect(edith!.rol, RolUsuario.propietario, reason: 'el primero siempre es propietario');
+      expect(permisosDeUsuario(edith!), Permiso.values.toSet(),
+          reason: 'el primero siempre tiene todos los permisos');
       expect(edith.pinHash, isNot(contains('2580')));
       expect(await repo.autenticar('edith', '0000'), isNull);
       expect(await repo.autenticar('nadie', '2580'), isNull);
     });
 
-    test('no repite usuarios y siempre deja un propietario activo', () async {
-      final edith = await repo.crear(const DatosUsuario(
-          nombre: 'Edith', usuario: 'edith', rol: RolUsuario.propietario, pin: '2580'));
-      final luis = await repo.crear(const DatosUsuario(
-          nombre: 'Luis', usuario: 'luis', rol: RolUsuario.admin, pin: '1357'));
+    test('no repite usuarios y siempre deja a alguien que administre usuarios', () async {
+      final edith = await repo.crear(DatosUsuario(
+          nombre: 'Edith', usuario: 'edith', permisos: PerfilBase.propietario.permisos, pin: '2580'));
+      final luis = await repo.crear(DatosUsuario(
+          nombre: 'Luis', usuario: 'luis', permisos: PerfilBase.administrador.permisos, pin: '1357'));
 
       expect(
-          () => repo.crear(const DatosUsuario(
-              nombre: 'Otra', usuario: 'EDITH', rol: RolUsuario.admin, pin: '9876')),
+          () => repo.crear(DatosUsuario(
+              nombre: 'Otra', usuario: 'EDITH', permisos: PerfilBase.administrador.permisos, pin: '9876')),
           throwsA(isA<OperacionNoPermitida>()));
       expect(() => repo.cambiarActivo(edith, false), throwsA(isA<OperacionNoPermitida>()));
       expect(
           () => repo.actualizar(
-              edith, const DatosUsuario(nombre: 'Edith', usuario: 'edith', rol: RolUsuario.admin)),
+              edith, DatosUsuario(
+                  nombre: 'Edith', usuario: 'edith', permisos: PerfilBase.administrador.permisos)),
           throwsA(isA<OperacionNoPermitida>()));
 
       // Un administrador desactivado ya no puede entrar.
@@ -114,10 +128,40 @@ void main() {
 
       // Cambiar el PIN.
       await repo.actualizar(edith,
-          const DatosUsuario(nombre: 'Edith M.', usuario: 'edith', rol: RolUsuario.propietario, pin: '4826'));
+          DatosUsuario(nombre: 'Edith M.', usuario: 'edith', permisos: PerfilBase.propietario.permisos, pin: '4826'));
       expect(await repo.autenticar('edith', '2580'), isNull);
       expect((await repo.autenticar('edith', '4826'))!.nombre, 'Edith M.');
     });
+  });
+
+  test('se guardan permisos personalizados y no se queda nadie sin administrar usuarios',
+      () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final repo = UsuariosRepository(db);
+    final edith = await repo.crear(DatosUsuario(
+        nombre: 'Edith', usuario: 'edith', permisos: PerfilBase.propietario.permisos, pin: '2580'));
+    final luis = await repo.crear(DatosUsuario(
+        nombre: 'Luis',
+        usuario: 'luis',
+        permisos: const {Permiso.registrarPagos, Permiso.verReportes},
+        pin: '1357'));
+
+    final l = await repo.autenticar('luis', '1357');
+    expect(permisosDeUsuario(l!), {Permiso.registrarPagos, Permiso.verReportes});
+
+    // Edith no puede quitarse "Administrar usuarios" si nadie más lo tiene…
+    expect(
+        () => repo.actualizar(edith,
+            DatosUsuario(nombre: 'Edith', usuario: 'edith', permisos: const {Permiso.verReportes})),
+        throwsA(isA<OperacionNoPermitida>()));
+    // …pero sí cuando Luis también lo tiene.
+    await repo.actualizar(luis,
+        DatosUsuario(nombre: 'Luis', usuario: 'luis', permisos: PerfilBase.propietario.permisos));
+    await repo.actualizar(edith,
+        DatosUsuario(nombre: 'Edith', usuario: 'edith', permisos: const {Permiso.verReportes}));
+    final e = await repo.autenticar('edith', '2580');
+    expect(nombrePerfil(permisosDeUsuario(e!)), 'Personalizado');
   });
 
   group('pantalla de acceso', () {

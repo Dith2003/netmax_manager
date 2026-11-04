@@ -137,13 +137,19 @@ class _ConNavegacion extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Configuración solo para quien tiene permiso (el propietario).
+    // Solo se muestran las secciones que el usuario tiene permiso de usar.
     final permisos = ref.watch(permisosProvider);
+    final destinos = [
+      for (final d in _destinos)
+        if (d.ruta != '/reportes' || permisos.verReportes) d,
+    ];
     final inferiores = [
       for (final d in _inferiores)
-        if (d.ruta != '/configuracion' || permisos.configurar) d,
+        if ((d.ruta != '/configuracion' || permisos.verConfiguracion) &&
+            (d.ruta != '/respaldos' || permisos.verRespaldos))
+          d,
     ];
-    final encontrado = _destinos.indexWhere((d) => ubicacion.startsWith(d.ruta));
+    final encontrado = destinos.indexWhere((d) => ubicacion.startsWith(d.ruta));
     final inferior = inferiores.indexWhere((d) => ubicacion.startsWith(d.ruta));
     final indice = encontrado < 0 ? (inferior >= 0 ? -1 : 0) : encontrado;
     final ancho = MediaQuery.sizeOf(context).width;
@@ -153,10 +159,10 @@ class _ConNavegacion extends ConsumerWidget {
         body: Row(
           children: [
             PanelLateral(
-              destinos: _destinos,
+              destinos: destinos,
               seleccionado: indice,
               extendido: ancho >= 1180,
-              onSeleccionar: (i) => context.go(_destinos[i].ruta),
+              onSeleccionar: (i) => context.go(destinos[i].ruta),
               destinosInferiores: inferiores,
               inferiorSeleccionado: inferior,
               onInferior: (i) => context.go(inferiores[i].ruta),
@@ -171,9 +177,9 @@ class _ConNavegacion extends ConsumerWidget {
       body: child,
       bottomNavigationBar: NavigationBar(
         selectedIndex: indice < 0 ? 0 : indice,
-        onDestinationSelected: (i) => context.go(_destinos[i].ruta),
+        onDestinationSelected: (i) => context.go(destinos[i].ruta),
         destinations: [
-          for (final d in _destinos)
+          for (final d in destinos)
             NavigationDestination(
               icon: Icon(d.icono),
               selectedIcon: Icon(d.iconoSeleccionado),

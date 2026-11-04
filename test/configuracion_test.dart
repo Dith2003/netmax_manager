@@ -208,7 +208,7 @@ void main() {
       child: const MaterialApp(home: ConfiguracionScreen()),
     ));
     await tester.pumpAndSettle();
-    expect(find.text('Solo el propietario puede cambiar la configuración.'), findsOneWidget);
+    expect(find.text('No tienes permiso para cambiar la configuración.'), findsOneWidget);
     expect(find.text('Nuevo plan'), findsNothing);
   });
 }

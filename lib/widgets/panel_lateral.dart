@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/marca.dart';
 import '../providers/sesion.dart';
 import '../providers/zoom.dart';
-import '../screens/sesion/acceso_screen.dart' show etiquetaRol;
+import '../screens/sesion/acceso_screen.dart' show etiquetaPerfil;
 
 /// Una sección del panel.
 class DestinoPanel {
@@ -318,7 +318,7 @@ class _UsuarioSesion extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                         fontFamily: 'Outfit', color: crema, fontWeight: FontWeight.w600)),
-                Text(etiquetaRol(usuario.rol),
+                Text(etiquetaPerfil(usuario),
                     style: TextStyle(
                         fontFamily: 'Outfit', fontSize: 12, color: crema.withValues(alpha: 0.7))),
               ],

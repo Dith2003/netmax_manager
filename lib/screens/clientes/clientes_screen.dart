@@ -5,6 +5,7 @@ import '../../core/dinero.dart';
 import '../../data/db/database.dart';
 import '../../data/repositories/clientes_repository.dart';
 import '../../providers/providers.dart';
+import '../../providers/sesion.dart';
 import '../../widgets/comunes.dart';
 import '../../widgets/disposicion.dart';
 import 'acciones_cliente.dart';
@@ -37,10 +38,11 @@ class _ClientesScreenState extends ConsumerState<ClientesScreen> {
     final clientes = ref.watch(clientesProvider(filtro));
 
     final escritorio = esEscritorio(context);
+    final puedeRegistrar = ref.watch(permisosProvider).gestionarClientes;
 
     return Scaffold(
       appBar: escritorio ? null : AppBar(title: const Text('Clientes')),
-      floatingActionButton: escritorio
+      floatingActionButton: escritorio || !puedeRegistrar
           ? null
           : FloatingActionButton.extended(
               onPressed: () => nuevoCliente(context),
@@ -57,11 +59,12 @@ class _ClientesScreenState extends ConsumerState<ClientesScreen> {
               descripcion: 'Busca, registra y consulta la información de tus clientes',
               icono: Icons.people,
               acciones: [
-                FilledButton.icon(
-                  onPressed: () => nuevoCliente(context),
-                  icon: const Icon(Icons.person_add),
-                  label: const Text('Nuevo cliente'),
-                ),
+                if (puedeRegistrar)
+                  FilledButton.icon(
+                    onPressed: () => nuevoCliente(context),
+                    icon: const Icon(Icons.person_add),
+                    label: const Text('Nuevo cliente'),
+                  ),
               ],
             ),
           Padding(

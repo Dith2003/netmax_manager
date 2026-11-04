@@ -37,9 +37,15 @@ class SesionNotifier extends Notifier<Usuario?> {
 final sesionProvider = NotifierProvider<SesionNotifier, Usuario?>(SesionNotifier.new);
 
 /// Lo que puede hacer el usuario actual.
-final permisosProvider = Provider<Permisos>(
-  (ref) => permisosDe(ref.watch(sesionProvider)?.rol),
-);
+/// Si el usuario cambia sus propios permisos, se usan los más recientes.
+final permisosProvider = Provider<Permisos>((ref) {
+  final sesion = ref.watch(sesionProvider);
+  if (sesion == null) return Permisos.todos;
+  final actual = ref.watch(usuariosProvider).whenOrNull(
+        data: (l) => l.where((u) => u.id == sesion.id).firstOrNull,
+      );
+  return Permisos(permisosDeUsuario(actual ?? sesion));
+});
 
 /// Nombre de cada usuario por id (para mostrar quién registró un pago o un cambio).
 final nombresUsuariosProvider = Provider<Map<int, String>>(

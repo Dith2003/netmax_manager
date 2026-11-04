@@ -9,20 +9,26 @@ class DatosUsuario {
   const DatosUsuario({
     required this.nombre,
     required this.usuario,
-    required this.rol,
+    required this.permisos,
     this.pin,
   });
 
   final String nombre;
   final String usuario;
-  final RolUsuario rol;
+
+  /// Lo que puede hacer (se parte de un [PerfilBase] y se ajusta).
+  final Set<Permiso> permisos;
 
   /// Obligatorio al crear; al editar, null = no cambia.
   final String? pin;
 }
 
+/// Permisos efectivos de un usuario.
+Set<Permiso> permisosDeUsuario(Usuario u) => leerPermisos(u.permisos, u.rol);
+
 /// Usuarios que pueden entrar a la app (se guardan en el propio equipo).
-/// No se borran: se desactivan. Siempre debe quedar un propietario activo.
+/// No se borran: se desactivan. Siempre debe quedar un usuario activo que pueda
+/// administrar usuarios (si no, nadie podría cambiar un PIN olvidado).
 class UsuariosRepository {
   UsuariosRepository(this._db);
 
@@ -44,7 +50,7 @@ class UsuariosRepository {
         .getSingleOrNull();
   }
 
-  /// Crea un usuario. El primero siempre es propietario.
+  /// Crea un usuario. El primero siempre tiene todos los permisos.
   Future<int> crear(DatosUsuario d) => _db.transaction(() async {
         final pin = d.pin;
         if (pin == null || validarPin(pin) != null) {
@@ -54,11 +60,13 @@ class UsuariosRepository {
           throw OperacionNoPermitida('Ya existe el usuario "${normalizarUsuario(d.usuario)}".');
         }
         final hayOtros = await (_db.select(_db.usuarios)..limit(1)).getSingleOrNull() != null;
+        final permisos = hayOtros ? d.permisos : PerfilBase.propietario.permisos;
         return _db.into(_db.usuarios).insert(UsuariosCompanion.insert(
               nombre: d.nombre.trim(),
               usuario: normalizarUsuario(d.usuario),
               pinHash: protegerPin(pin),
-              rol: hayOtros ? d.rol : RolUsuario.propietario,
+              rol: rolParaPermisos(permisos),
+              permisos: Value(guardarPermisos(permisos)),
               creadoEn: Value(DateTime.now()),
             ));
       });
@@ -70,11 +78,10 @@ class UsuariosRepository {
     return verificarPin(pin.trim(), u.pinHash) ? u : null;
   }
 
-  /// Cambia nombre, rol y, si viene, el PIN.
+  /// Cambia nombre, permisos y, si viene, el PIN.
   Future<void> actualizar(int id, DatosUsuario d) => _db.transaction(() async {
-        final actual = await (_db.select(_db.usuarios)..where((u) => u.id.equals(id))).getSingle();
-        if (actual.rol == RolUsuario.propietario && d.rol != RolUsuario.propietario) {
-          await _verificarQueQuedeOtroPropietario(id);
+        if (!d.permisos.contains(Permiso.administrarUsuarios)) {
+          await _verificarQueQuedeOtroAdministrador(id);
         }
         final pin = d.pin;
         if (pin != null && validarPin(pin) != null) {
@@ -82,31 +89,28 @@ class UsuariosRepository {
         }
         await (_db.update(_db.usuarios)..where((u) => u.id.equals(id))).write(UsuariosCompanion(
           nombre: Value(d.nombre.trim()),
-          rol: Value(d.rol),
+          rol: Value(rolParaPermisos(d.permisos)),
+          permisos: Value(guardarPermisos(d.permisos)),
           pinHash: pin == null ? const Value.absent() : Value(protegerPin(pin)),
         ));
       });
 
   /// Activa o desactiva un usuario (un desactivado ya no puede entrar).
   Future<void> cambiarActivo(int id, bool activo) => _db.transaction(() async {
-        if (!activo) {
-          final u = await (_db.select(_db.usuarios)..where((u) => u.id.equals(id))).getSingle();
-          if (u.rol == RolUsuario.propietario) await _verificarQueQuedeOtroPropietario(id);
-        }
+        if (!activo) await _verificarQueQuedeOtroAdministrador(id);
         await (_db.update(_db.usuarios)..where((u) => u.id.equals(id)))
             .write(UsuariosCompanion(activo: Value(activo)));
       });
 
-  Future<void> _verificarQueQuedeOtroPropietario(int id) async {
-    final otros = await (_db.select(_db.usuarios)
-          ..where((u) =>
-              u.rol.equalsValue(RolUsuario.propietario) &
-              u.activo.equals(true) &
-              u.id.equals(id).not()))
-        .get();
-    if (otros.isEmpty) {
+  /// Falla si [id] es el único usuario activo que puede administrar usuarios.
+  Future<void> _verificarQueQuedeOtroAdministrador(int id) async {
+    final activos =
+        await (_db.select(_db.usuarios)..where((u) => u.activo.equals(true))).get();
+    final quedan = activos.where(
+        (u) => u.id != id && permisosDeUsuario(u).contains(Permiso.administrarUsuarios));
+    if (quedan.isEmpty) {
       throw const OperacionNoPermitida(
-          'Debe quedar al menos un propietario activo para administrar la app.');
+          'Debe quedar al menos un usuario activo que pueda administrar usuarios.');
     }
   }
 }

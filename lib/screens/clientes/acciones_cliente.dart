@@ -98,8 +98,10 @@ class BotonesCliente extends ConsumerWidget {
           AccionCliente.cancelar => scheme.error,
         };
 
+    final permisos = ref.watch(permisosProvider);
     final botones = [
       for (final a in accionesDisponibles(cliente.estado))
+        if (a == AccionCliente.editar ? permisos.gestionarClientes : permisos.cambiarEstadoClientes)
         compacto
             ? IconButton(
                 tooltip: a.etiqueta,

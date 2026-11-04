@@ -20,13 +20,13 @@ class ConfiguracionScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final escritorio = esEscritorio(context);
     final permisos = ref.watch(permisosProvider);
-    if (!permisos.configurar) {
+    if (!permisos.verConfiguracion) {
       return Scaffold(
         appBar: escritorio ? null : AppBar(title: const Text('Configuración')),
         body: const Center(
           child: Padding(
             padding: EdgeInsets.all(24),
-            child: Text('Solo el propietario puede cambiar la configuración.',
+            child: Text('No tienes permiso para cambiar la configuración.',
                 textAlign: TextAlign.center),
           ),
         ),
@@ -45,17 +45,19 @@ class ConfiguracionScreen extends ConsumerWidget {
                 if (escritorio)
                   const EncabezadoSeccion(
                     titulo: 'Configuración',
-                    descripcion: 'Planes de internet, tipos de contratación y usuarios',
+                    descripcion: 'Planes de internet, tipos de contratación y gestión de usuarios',
                     icono: Icons.settings,
                   ),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: _TarjetaPlanes(),
-                ),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: _TarjetaContrataciones(),
-                ),
+                if (permisos.configurar) ...[
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    child: _TarjetaPlanes(),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    child: _TarjetaContrataciones(),
+                  ),
+                ],
                 if (permisos.administrarUsuarios)
                   const Padding(
                     padding: EdgeInsets.fromLTRB(16, 16, 16, 0),

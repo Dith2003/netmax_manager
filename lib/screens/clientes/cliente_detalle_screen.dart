@@ -94,7 +94,8 @@ class _Ficha extends ConsumerWidget {
         automaticallyImplyLeading: !enModal,
         title: Text(cliente.nombre),
       ),
-      floatingActionButton: cliente.estado == EstadoCliente.cancelado
+      floatingActionButton:
+          cliente.estado == EstadoCliente.cancelado || !ref.watch(permisosProvider).registrarPagos
           ? null
           : FloatingActionButton.extended(
               onPressed: () => registrarPagoConComprobante(context, cliente.id),
@@ -192,6 +193,7 @@ class _AvisoEquipoPrestado extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final equipos = ref.watch(equiposProvider(cliente.id));
+    final permisos = ref.watch(permisosProvider);
     final instalados = equipos.when(
       data: (l) => l
           .where((e) => e.propiedad == PropiedadEquipo.netmax && e.fechaRetiro == null)
@@ -214,7 +216,9 @@ class _AvisoEquipoPrestado extends ConsumerWidget {
       ),
       actions: [
         TextButton(
-          onPressed: () async {
+          onPressed: !ref.watch(permisosProvider).gestionarClientes
+              ? null
+              : () async {
             final datos = await mostrarDialogoEquipo(
               context,
               propiedadSugerida: PropiedadEquipo.netmax,
@@ -360,7 +364,9 @@ class _SeccionInstalaciones extends ConsumerWidget {
           '', // el nombre está en la pestaña
           descripcion: 'Visitas para instalar el servicio en el domicilio de este cliente: '
               'fecha, técnico y costo de la instalación, y si ya la pagó.',
-          accion: TextButton.icon(
+          accion: !ref.watch(permisosProvider).gestionarClientes
+              ? null
+              : TextButton.icon(
             icon: const Icon(Icons.add),
             label: const Text('Agregar'),
             onPressed: () async {
@@ -389,7 +395,9 @@ class _SeccionInstalaciones extends ConsumerWidget {
                         ? FilterChip(
                             label: Text(i.pagado ? 'Pagada' : 'Pendiente'),
                             selected: i.pagado,
-                            onSelected: (v) => repo.marcarInstalacionPagada(i.id, v),
+                            onSelected: ref.watch(permisosProvider).gestionarClientes
+                                ? (v) => repo.marcarInstalacionPagada(i.id, v)
+                                : null,
                           )
                         : null,
                   ),
@@ -464,7 +472,9 @@ class _SeccionEquipos extends ConsumerWidget {
           descripcion: 'Antenas, routers y demás equipo en el domicilio de este cliente. '
               'Si es de NET_MAX (prestado) queda registrado para recuperarlo o cobrarlo si '
               'cancela; si es del cliente, solo como referencia.',
-          accion: TextButton.icon(
+          accion: !permisos.gestionarClientes
+              ? null
+              : TextButton.icon(
             icon: const Icon(Icons.add),
             label: const Text('Agregar'),
             onPressed: () async {
@@ -500,16 +510,19 @@ class _SeccionEquipos extends ConsumerWidget {
                       if (e.fechaEntrega != null) 'Entregado ${formatoFechaCorta(e.fechaEntrega!)}',
                       if (e.fechaRetiro != null) 'Retirado ${formatoFechaCorta(e.fechaRetiro!)}',
                     ].join(' · ')),
-                    trailing: e.fechaRetiro == null
+                    trailing: e.fechaRetiro == null &&
+                            (permisos.gestionarClientes ||
+                                (permisos.ajustarCuentas && e.propiedad == PropiedadEquipo.netmax))
                         ? PopupMenuButton<String>(
                             tooltip: 'Opciones del equipo',
                             onSelected: (opcion) => opcion == 'retirar'
                                 ? _retirar(context, ref, e)
                                 : _cobrarNoDevuelto(context, ref, e),
                             itemBuilder: (_) => [
-                              const PopupMenuItem(
-                                  value: 'retirar', child: Text('Registrar retiro')),
-                              if (e.propiedad == PropiedadEquipo.netmax)
+                              if (permisos.gestionarClientes)
+                                const PopupMenuItem(
+                                    value: 'retirar', child: Text('Registrar retiro')),
+                              if (e.propiedad == PropiedadEquipo.netmax && permisos.ajustarCuentas)
                                 const PopupMenuItem(
                                     value: 'cobrar', child: Text('Cobrar equipo no devuelto')),
                             ],

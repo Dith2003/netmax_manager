@@ -39,12 +39,13 @@ class InicioScreen extends ConsumerWidget {
         toolbarHeight: 76,
         title: const MarcaNetMax(alto: 40, sobreOscuro: true, conLema: true),
         actions: [
-          IconButton(
-            tooltip: 'Respaldos',
-            icon: const Icon(Icons.backup),
-            onPressed: () => context.push('/respaldos'),
-          ),
-          if (ref.watch(permisosProvider).configurar)
+          if (ref.watch(permisosProvider).verRespaldos)
+            IconButton(
+              tooltip: 'Respaldos',
+              icon: const Icon(Icons.backup),
+              onPressed: () => context.push('/respaldos'),
+            ),
+          if (ref.watch(permisosProvider).verConfiguracion)
             IconButton(
               tooltip: 'Configuración',
               icon: const Icon(Icons.settings),
@@ -61,17 +62,20 @@ class InicioScreen extends ConsumerWidget {
       body: resumen.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => ErrorVista(e),
-        data: (r) => _Contenido(r, recordarRespaldo: recordarRespaldo),
+        data: (r) => _Contenido(r,
+            recordarRespaldo: recordarRespaldo,
+            verReportes: ref.watch(permisosProvider).verReportes),
       ),
     );
   }
 }
 
 class _Contenido extends StatefulWidget {
-  const _Contenido(this.r, {this.recordarRespaldo = false});
+  const _Contenido(this.r, {this.recordarRespaldo = false, this.verReportes = true});
 
   final ResumenDashboard r;
   final bool recordarRespaldo;
+  final bool verReportes;
 
   @override
   State<_Contenido> createState() => _ContenidoState();
@@ -238,7 +242,7 @@ class _ContenidoState extends State<_Contenido> {
         valor: formatoDinero(r.cobradoMes),
         detalle: '${r.pagosMes} ${r.pagosMes == 1 ? 'pago recibido' : 'pagos recibidos'}',
         variacion: variacion,
-        onTap: () => context.push('/reportes/comprobantes'),
+        onTap: widget.verReportes ? () => context.push('/reportes/comprobantes') : null,
         ayuda: 'Ver comprobantes de pago',
       ),
       _Indicador(
@@ -283,7 +287,7 @@ class _ContenidoState extends State<_Contenido> {
 // Encabezado con acciones rápidas
 // ---------------------------------------------------------------------------
 
-class _Encabezado extends StatelessWidget {
+class _Encabezado extends ConsumerWidget {
   const _Encabezado({required this.r, this.selectorMeses});
 
   final ResumenDashboard r;
@@ -295,9 +299,10 @@ class _Encabezado extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final texto = Theme.of(context).textTheme;
     final hoy = DateTime.now();
+    final permisos = ref.watch(permisosProvider);
     return Wrap(
       spacing: 12,
       runSpacing: 12,
@@ -318,16 +323,18 @@ class _Encabezado extends StatelessWidget {
           runSpacing: 8,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            FilledButton.icon(
-              onPressed: () => _registrarPago(context),
-              icon: const Icon(Icons.payments),
-              label: const Text('Registrar pago'),
-            ),
-            OutlinedButton.icon(
-              onPressed: () => nuevoCliente(context),
-              icon: const Icon(Icons.person_add),
-              label: const Text('Nuevo cliente'),
-            ),
+            if (permisos.registrarPagos)
+              FilledButton.icon(
+                onPressed: () => _registrarPago(context),
+                icon: const Icon(Icons.payments),
+                label: const Text('Registrar pago'),
+              ),
+            if (permisos.gestionarClientes)
+              OutlinedButton.icon(
+                onPressed: () => nuevoCliente(context),
+                icon: const Icon(Icons.person_add),
+                label: const Text('Nuevo cliente'),
+              ),
             ?selectorMeses,
           ],
         ),

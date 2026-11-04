@@ -175,7 +175,7 @@ class _RespaldosScreenState extends ConsumerState<RespaldosScreen> {
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
-              onPressed: _crearRespaldo,
+              onPressed: ref.watch(permisosProvider).crearRespaldos ? _crearRespaldo : null,
               icon: const Icon(Icons.backup),
               label: Text(Platform.isAndroid ? 'Crear y compartir respaldo' : 'Crear respaldo'),
             ),
@@ -186,7 +186,7 @@ class _RespaldosScreenState extends ConsumerState<RespaldosScreen> {
                 child: ListTile(
                   leading: Icon(Icons.lock_outline),
                   title: Text('Restaurar respaldos'),
-                  subtitle: Text('Solo el propietario puede restaurar un respaldo.'),
+                  subtitle: Text('No tienes permiso para restaurar un respaldo.'),
                 ),
               )
             else ...[

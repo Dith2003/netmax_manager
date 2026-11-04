@@ -31,7 +31,8 @@ lib/
                  #   agruparDetalles de contratación personalizada),
                  # planes.dart (DatosPlan, validaciones de plan),
                  # usuarios.dart (PIN protegido con sal + SHA-256 iterado, validaciones,
-                 #   bloqueo tras 5 intentos, Permisos por rol),
+                 #   bloqueo tras 5 intentos, enum Permiso, PerfilBase como plantilla,
+                 #   guardar/leerPermisos, nombrePerfil),
                  # vencimientos.dart (primer mes de cobro, mesesPorGenerar, estadoEnFecha),
                  # dashboard.dart (cobrado del mes, avance del mes, próximos vencimientos,
                  #   serieCobranza y serieActividad de 12 meses),
@@ -63,7 +64,7 @@ lib/
                  # ficha, diálogos, acciones_cliente.dart: editar/suspender/reactivar/cancelar,
                  # modales.dart: alta/edición/ficha en ventana modal con navegación propia),
                  # configuracion/ (planes, tipos de contratación, dialogo_plan.dart,
-                 #   usuarios_seccion.dart); sesion/acceso_screen.dart (PuertaSesion: primer
+                 #   usuarios_seccion.dart: gestión de usuarios con permisos por casillas); sesion/acceso_screen.dart (PuertaSesion: primer
                  #   propietario o usuario + PIN),
                  # estado_cuenta_screen.dart; pagos/ (registrar pago, comprobante_screen);
                  # adeudos/ (lista de adeudos); inicio/ (dashboard: acciones rápidas, indicadores,
@@ -156,11 +157,16 @@ docs/
    reactivar). La ficha muestra los mismos botones. Siempre se pide confirmación con motivo.
 20. **Acceso (login)**: usuario + PIN (4–6 números) al abrir la app; la sesión dura hasta cerrar
    la app o "Cerrar sesión" (panel lateral / barra de Inicio en el celular). Sin usuarios, se crea
-   el propietario (el primero siempre lo es). Roles: **propietario** (todo) y **administrador**
-   (registra clientes y pagos; no ve Configuración, no restaura respaldos, no cancela pagos, no
-   administra usuarios). Usuarios en Configuración › Usuarios: no se borran, se desactivan; debe
-   quedar un propietario activo; no puedes desactivarte a ti mismo. 5 PIN incorrectos = 30 s de
-   espera. Se guarda quién registró cada pago (`pagos.registrado_por`) y cada cambio de estado
+   el primero con todos los permisos. **Permisos individuales** (no roles) guardados en
+   `usuarios.permisos` (v5): registrar/cancelar pagos, ajustar estados de cuenta, registrar/editar
+   clientes, cambiar su estado, ver reportes, crear/restaurar respaldos, configurar, administrar
+   usuarios. **Perfiles base** (plantillas): Propietario (todo) y Administrador (sin cancelar pagos,
+   restaurar, configurar ni administrar usuarios); se elige uno y se ajusta casilla por casilla; si
+   no coincide con ninguno se muestra "Personalizado". `usuarios.rol` queda solo como referencia;
+   usuarios sin `permisos` (antes de v5) usan los de su rol. Las pantallas ocultan o desactivan lo
+   que el usuario no puede hacer (`permisosProvider`). Configuración › Gestión de usuarios: no se
+   borran, se desactivan; siempre debe quedar un usuario activo con "Administrar usuarios"; nadie
+   se desactiva a sí mismo. 5 PIN incorrectos = 30 s de espera. Se guarda quién registró cada pago (`pagos.registrado_por`) y cada cambio de estado
    (`historial_estados.usuario_id`) y se muestra "por <nombre>" en la ficha.
 21. **Folio del pago**: es el número del comprobante (id del pago, 6 dígitos) y lo asigna el
    sistema; al registrar se muestra el siguiente (no editable). La columna `pagos.folio` guarda
@@ -175,7 +181,7 @@ docs/
 - Clase de datos de `periodos` = `PeriodoRow` (para no chocar con la clase de dominio).
 - Tras cambiar tablas: `dart run build_runner build --delete-conflicting-outputs`
   y subir `schemaVersion` con su migración (+ prueba en `test/migracion_test.dart`).
-  Versión actual del esquema: **4**. Como Claude no puede correr build_runner, el CI imprime
+  Versión actual del esquema: **5**. Como Claude no puede correr build_runner, el CI imprime
   `database.g.dart` regenerado (gzip+base64, entre `INICIO_BASE64`/`FIN_BASE64`) si está
   desactualizado: se decodifica del log y se sube.
 - Toda lógica de cálculo (vencimientos, adeudos) va en repositorios/servicios con
@@ -263,7 +269,8 @@ docs/
 - [x] Revisión de botones (zoom < 100 %, "atrás" en modales, Guardar PDF en Windows),
       Configuración de planes y contratación personalizada, descripciones de Instalaciones y
       Equipos, botones de gestión visibles en la tabla de clientes
-- [x] Ficha en pestañas, folio automático del pago, login con usuario + PIN y roles
+- [x] Ficha en pestañas, folio automático del pago, login con usuario + PIN y gestión de
+      usuarios con permisos individuales (perfiles Propietario/Administrador como plantillas)
 
 ## Futuro (no hacer todavía)
 Sincronización entre dispositivos, recordatorios por WhatsApp, mapa/GPS de clientes,
