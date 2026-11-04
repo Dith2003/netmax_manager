@@ -219,7 +219,9 @@ class ClientesRepository {
 
   /// Cambia el estado (activo/suspendido/cancelado) y lo registra en el historial.
   /// Los clientes nunca se borran.
-  Future<void> cambiarEstado(int clienteId, EstadoCliente nuevo, {String? motivo}) {
+  /// [usuarioId]: quién hizo el cambio (sesión actual).
+  Future<void> cambiarEstado(int clienteId, EstadoCliente nuevo,
+      {String? motivo, int? usuarioId}) {
     return _db.transaction(() async {
       final cliente = await obtenerCliente(clienteId);
       if (cliente == null) {
@@ -233,6 +235,7 @@ class ClientesRepository {
             estadoAnterior: Value(cliente.estado),
             estadoNuevo: nuevo,
             motivo: Value(motivo),
+            usuarioId: Value(usuarioId),
             fecha: Value(_ahora()),
           ));
       // Al reactivar se generan los meses desde ese momento (no los de la suspensión).

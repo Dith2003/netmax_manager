@@ -24,7 +24,11 @@ class Usuarios extends Table {
   TextColumn get nombre => text()();
   TextColumn get usuario => text().unique()();
   TextColumn get pinHash => text()();
+  /// Perfil base de referencia; lo que puede hacer está en [permisos].
   TextColumn get rol => textEnum<RolUsuario>()();
+  /// Permisos del usuario separados por coma (nombres de `Permiso`, v5).
+  /// null = los del perfil de su rol (usuarios creados antes de la v5).
+  TextColumn get permisos => text().nullable()();
   BoolColumn get activo => boolean().withDefault(const Constant(true))();
   DateTimeColumn get creadoEn => dateTime().withDefault(currentDateAndTime)();
 }
@@ -226,7 +230,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -250,6 +254,10 @@ class AppDatabase extends _$AppDatabase {
           if (from < 4) {
             // v4: tipo de contratación personalizado ("otro" + descripción libre).
             await m.addColumn(clientes, clientes.tipoContratacionDetalle);
+          }
+          if (from < 5) {
+            // v5: permisos individuales por usuario (los existentes conservan los de su rol).
+            await m.addColumn(usuarios, usuarios.permisos);
           }
         },
         beforeOpen: (details) async {

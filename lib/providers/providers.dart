@@ -82,6 +82,11 @@ final periodosProvider = StreamProvider.autoDispose.family<List<PeriodoSaldo>, i
   (ref, clienteId) => ref.watch(pagosRepositoryProvider).vigilarPeriodos(clienteId),
 );
 
+/// Folio que tendrá el siguiente pago (se muestra al registrar, no se edita).
+final siguienteFolioProvider = FutureProvider.autoDispose<int>(
+  (ref) => ref.watch(pagosRepositoryProvider).siguienteFolio(),
+);
+
 /// Pagos del cliente con los meses que cubrió cada uno.
 final pagosProvider = StreamProvider.autoDispose.family<List<PagoConDetalle>, int>(
   (ref, clienteId) => ref.watch(pagosRepositoryProvider).vigilarPagos(clienteId),

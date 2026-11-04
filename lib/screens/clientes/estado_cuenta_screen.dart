@@ -9,6 +9,7 @@ import '../../data/repositories/vencimientos_repository.dart';
 import '../../domain/cobranza.dart';
 import '../../domain/vencimientos.dart';
 import '../../providers/providers.dart';
+import '../../providers/sesion.dart';
 import '../../widgets/comunes.dart';
 import '../../widgets/disposicion.dart';
 import 'dialogos.dart';
@@ -109,6 +110,8 @@ class EstadoCuentaScreen extends ConsumerWidget {
     final cliente = ref.watch(clienteProvider(clienteId));
     final periodos = ref.watch(periodosProvider(clienteId));
     final cargos = ref.watch(cargosProvider(clienteId));
+    // Cortesías, meses y cargos: solo con el permiso "Ajustar estados de cuenta".
+    final puedeAjustar = ref.watch(permisosProvider).ajustarCuentas;
     final listaCargos = cargos.when(
       data: (c) => c,
       loading: () => const <CargoSaldo>[],
@@ -124,7 +127,7 @@ class EstadoCuentaScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(nombre.isEmpty ? 'Estado de cuenta' : 'Estado de cuenta · $nombre'),
       ),
-      floatingActionButton: periodos.hasValue
+      floatingActionButton: periodos.hasValue && puedeAjustar
           ? FloatingActionButton.extended(
               onPressed: () => _elegirQueAgregar(context, ref, periodos.requireValue),
               icon: const Icon(Icons.add),
@@ -170,6 +173,7 @@ class EstadoCuentaScreen extends ConsumerWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(formatoDinero(c.monto)),
+                        if (puedeAjustar)
                         PopupMenuButton<String>(
                           tooltip: 'Opciones del cargo',
                           onSelected: (_) async {
@@ -209,6 +213,7 @@ class EstadoCuentaScreen extends ConsumerWidget {
                 _FilaMes(
                   periodo: p,
                   hoy: hoy,
+                  editable: puedeAjustar,
                   onCortesia: (valor) => _ejecutar(
                     context,
                     () => ref
@@ -239,7 +244,11 @@ class _FilaMes extends StatelessWidget {
     required this.hoy,
     required this.onCortesia,
     required this.onQuitar,
+    this.editable = true,
   });
+
+  /// Muestra el menú de cortesía / quitar mes.
+  final bool editable;
 
   final PeriodoSaldo periodo;
   final DateTime hoy;
@@ -290,6 +299,7 @@ class _FilaMes extends StatelessWidget {
                     style: Theme.of(context).textTheme.bodySmall),
             ],
           ),
+          if (editable)
           PopupMenuButton<String>(
             tooltip: 'Opciones del mes',
             onSelected: (opcion) {

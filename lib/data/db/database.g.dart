@@ -62,6 +62,17 @@ class $UsuariosTable extends Usuarios with TableInfo<$UsuariosTable, Usuario> {
         type: DriftSqlType.string,
         requiredDuringInsert: true,
       ).withConverter<RolUsuario>($UsuariosTable.$converterrol);
+  static const VerificationMeta _permisosMeta = const VerificationMeta(
+    'permisos',
+  );
+  @override
+  late final GeneratedColumn<String> permisos = GeneratedColumn<String>(
+    'permisos',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _activoMeta = const VerificationMeta('activo');
   @override
   late final GeneratedColumn<bool> activo = GeneratedColumn<bool>(
@@ -94,6 +105,7 @@ class $UsuariosTable extends Usuarios with TableInfo<$UsuariosTable, Usuario> {
     usuario,
     pinHash,
     rol,
+    permisos,
     activo,
     creadoEn,
   ];
@@ -135,6 +147,12 @@ class $UsuariosTable extends Usuarios with TableInfo<$UsuariosTable, Usuario> {
       );
     } else if (isInserting) {
       context.missing(_pinHashMeta);
+    }
+    if (data.containsKey('permisos')) {
+      context.handle(
+        _permisosMeta,
+        permisos.isAcceptableOrUnknown(data['permisos']!, _permisosMeta),
+      );
     }
     if (data.containsKey('activo')) {
       context.handle(
@@ -179,6 +197,10 @@ class $UsuariosTable extends Usuarios with TableInfo<$UsuariosTable, Usuario> {
           data['${effectivePrefix}rol'],
         )!,
       ),
+      permisos: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}permisos'],
+      ),
       activo: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}activo'],
@@ -204,7 +226,13 @@ class Usuario extends DataClass implements Insertable<Usuario> {
   final String nombre;
   final String usuario;
   final String pinHash;
+
+  /// Perfil base de referencia; lo que puede hacer está en [permisos].
   final RolUsuario rol;
+
+  /// Permisos del usuario separados por coma (nombres de `Permiso`, v5).
+  /// null = los del perfil de su rol (usuarios creados antes de la v5).
+  final String? permisos;
   final bool activo;
   final DateTime creadoEn;
   const Usuario({
@@ -213,6 +241,7 @@ class Usuario extends DataClass implements Insertable<Usuario> {
     required this.usuario,
     required this.pinHash,
     required this.rol,
+    this.permisos,
     required this.activo,
     required this.creadoEn,
   });
@@ -226,6 +255,9 @@ class Usuario extends DataClass implements Insertable<Usuario> {
     {
       map['rol'] = Variable<String>($UsuariosTable.$converterrol.toSql(rol));
     }
+    if (!nullToAbsent || permisos != null) {
+      map['permisos'] = Variable<String>(permisos);
+    }
     map['activo'] = Variable<bool>(activo);
     map['creado_en'] = Variable<DateTime>(creadoEn);
     return map;
@@ -238,6 +270,9 @@ class Usuario extends DataClass implements Insertable<Usuario> {
       usuario: Value(usuario),
       pinHash: Value(pinHash),
       rol: Value(rol),
+      permisos: permisos == null && nullToAbsent
+          ? const Value.absent()
+          : Value(permisos),
       activo: Value(activo),
       creadoEn: Value(creadoEn),
     );
@@ -256,6 +291,7 @@ class Usuario extends DataClass implements Insertable<Usuario> {
       rol: $UsuariosTable.$converterrol.fromJson(
         serializer.fromJson<String>(json['rol']),
       ),
+      permisos: serializer.fromJson<String?>(json['permisos']),
       activo: serializer.fromJson<bool>(json['activo']),
       creadoEn: serializer.fromJson<DateTime>(json['creadoEn']),
     );
@@ -271,6 +307,7 @@ class Usuario extends DataClass implements Insertable<Usuario> {
       'rol': serializer.toJson<String>(
         $UsuariosTable.$converterrol.toJson(rol),
       ),
+      'permisos': serializer.toJson<String?>(permisos),
       'activo': serializer.toJson<bool>(activo),
       'creadoEn': serializer.toJson<DateTime>(creadoEn),
     };
@@ -282,6 +319,7 @@ class Usuario extends DataClass implements Insertable<Usuario> {
     String? usuario,
     String? pinHash,
     RolUsuario? rol,
+    Value<String?> permisos = const Value.absent(),
     bool? activo,
     DateTime? creadoEn,
   }) => Usuario(
@@ -290,6 +328,7 @@ class Usuario extends DataClass implements Insertable<Usuario> {
     usuario: usuario ?? this.usuario,
     pinHash: pinHash ?? this.pinHash,
     rol: rol ?? this.rol,
+    permisos: permisos.present ? permisos.value : this.permisos,
     activo: activo ?? this.activo,
     creadoEn: creadoEn ?? this.creadoEn,
   );
@@ -300,6 +339,7 @@ class Usuario extends DataClass implements Insertable<Usuario> {
       usuario: data.usuario.present ? data.usuario.value : this.usuario,
       pinHash: data.pinHash.present ? data.pinHash.value : this.pinHash,
       rol: data.rol.present ? data.rol.value : this.rol,
+      permisos: data.permisos.present ? data.permisos.value : this.permisos,
       activo: data.activo.present ? data.activo.value : this.activo,
       creadoEn: data.creadoEn.present ? data.creadoEn.value : this.creadoEn,
     );
@@ -313,6 +353,7 @@ class Usuario extends DataClass implements Insertable<Usuario> {
           ..write('usuario: $usuario, ')
           ..write('pinHash: $pinHash, ')
           ..write('rol: $rol, ')
+          ..write('permisos: $permisos, ')
           ..write('activo: $activo, ')
           ..write('creadoEn: $creadoEn')
           ..write(')'))
@@ -320,8 +361,16 @@ class Usuario extends DataClass implements Insertable<Usuario> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, nombre, usuario, pinHash, rol, activo, creadoEn);
+  int get hashCode => Object.hash(
+    id,
+    nombre,
+    usuario,
+    pinHash,
+    rol,
+    permisos,
+    activo,
+    creadoEn,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -331,6 +380,7 @@ class Usuario extends DataClass implements Insertable<Usuario> {
           other.usuario == this.usuario &&
           other.pinHash == this.pinHash &&
           other.rol == this.rol &&
+          other.permisos == this.permisos &&
           other.activo == this.activo &&
           other.creadoEn == this.creadoEn);
 }
@@ -341,6 +391,7 @@ class UsuariosCompanion extends UpdateCompanion<Usuario> {
   final Value<String> usuario;
   final Value<String> pinHash;
   final Value<RolUsuario> rol;
+  final Value<String?> permisos;
   final Value<bool> activo;
   final Value<DateTime> creadoEn;
   const UsuariosCompanion({
@@ -349,6 +400,7 @@ class UsuariosCompanion extends UpdateCompanion<Usuario> {
     this.usuario = const Value.absent(),
     this.pinHash = const Value.absent(),
     this.rol = const Value.absent(),
+    this.permisos = const Value.absent(),
     this.activo = const Value.absent(),
     this.creadoEn = const Value.absent(),
   });
@@ -358,6 +410,7 @@ class UsuariosCompanion extends UpdateCompanion<Usuario> {
     required String usuario,
     required String pinHash,
     required RolUsuario rol,
+    this.permisos = const Value.absent(),
     this.activo = const Value.absent(),
     this.creadoEn = const Value.absent(),
   }) : nombre = Value(nombre),
@@ -370,6 +423,7 @@ class UsuariosCompanion extends UpdateCompanion<Usuario> {
     Expression<String>? usuario,
     Expression<String>? pinHash,
     Expression<String>? rol,
+    Expression<String>? permisos,
     Expression<bool>? activo,
     Expression<DateTime>? creadoEn,
   }) {
@@ -379,6 +433,7 @@ class UsuariosCompanion extends UpdateCompanion<Usuario> {
       if (usuario != null) 'usuario': usuario,
       if (pinHash != null) 'pin_hash': pinHash,
       if (rol != null) 'rol': rol,
+      if (permisos != null) 'permisos': permisos,
       if (activo != null) 'activo': activo,
       if (creadoEn != null) 'creado_en': creadoEn,
     });
@@ -390,6 +445,7 @@ class UsuariosCompanion extends UpdateCompanion<Usuario> {
     Value<String>? usuario,
     Value<String>? pinHash,
     Value<RolUsuario>? rol,
+    Value<String?>? permisos,
     Value<bool>? activo,
     Value<DateTime>? creadoEn,
   }) {
@@ -399,6 +455,7 @@ class UsuariosCompanion extends UpdateCompanion<Usuario> {
       usuario: usuario ?? this.usuario,
       pinHash: pinHash ?? this.pinHash,
       rol: rol ?? this.rol,
+      permisos: permisos ?? this.permisos,
       activo: activo ?? this.activo,
       creadoEn: creadoEn ?? this.creadoEn,
     );
@@ -424,6 +481,9 @@ class UsuariosCompanion extends UpdateCompanion<Usuario> {
         $UsuariosTable.$converterrol.toSql(rol.value),
       );
     }
+    if (permisos.present) {
+      map['permisos'] = Variable<String>(permisos.value);
+    }
     if (activo.present) {
       map['activo'] = Variable<bool>(activo.value);
     }
@@ -441,6 +501,7 @@ class UsuariosCompanion extends UpdateCompanion<Usuario> {
           ..write('usuario: $usuario, ')
           ..write('pinHash: $pinHash, ')
           ..write('rol: $rol, ')
+          ..write('permisos: $permisos, ')
           ..write('activo: $activo, ')
           ..write('creadoEn: $creadoEn')
           ..write(')'))
@@ -6132,6 +6193,7 @@ typedef $$UsuariosTableCreateCompanionBuilder = UsuariosCompanion Function({
   required String usuario,
   required String pinHash,
   required RolUsuario rol,
+  Value<String?> permisos,
   Value<bool> activo,
   Value<DateTime> creadoEn,
 });
@@ -6141,6 +6203,7 @@ typedef $$UsuariosTableUpdateCompanionBuilder = UsuariosCompanion Function({
   Value<String> usuario,
   Value<String> pinHash,
   Value<RolUsuario> rol,
+  Value<String?> permisos,
   Value<bool> activo,
   Value<DateTime> creadoEn,
 });
@@ -6242,6 +6305,11 @@ class $$UsuariosTableFilterComposer
         column: $table.rol,
         builder: (column) => ColumnWithTypeConverterFilters(column),
       );
+
+  ColumnFilters<String> get permisos => $composableBuilder(
+    column: $table.permisos,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<bool> get activo => $composableBuilder(
     column: $table.activo,
@@ -6363,6 +6431,11 @@ class $$UsuariosTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get permisos => $composableBuilder(
+    column: $table.permisos,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get activo => $composableBuilder(
     column: $table.activo,
     builder: (column) => ColumnOrderings(column),
@@ -6397,6 +6470,9 @@ class $$UsuariosTableAnnotationComposer
 
   GeneratedColumnWithTypeConverter<RolUsuario, String> get rol =>
       $composableBuilder(column: $table.rol, builder: (column) => column);
+
+  GeneratedColumn<String> get permisos =>
+      $composableBuilder(column: $table.permisos, builder: (column) => column);
 
   GeneratedColumn<bool> get activo =>
       $composableBuilder(column: $table.activo, builder: (column) => column);
@@ -6517,6 +6593,7 @@ class $$UsuariosTableTableManager
                 Value<String> usuario = const Value.absent(),
                 Value<String> pinHash = const Value.absent(),
                 Value<RolUsuario> rol = const Value.absent(),
+                Value<String?> permisos = const Value.absent(),
                 Value<bool> activo = const Value.absent(),
                 Value<DateTime> creadoEn = const Value.absent(),
               }) => UsuariosCompanion(
@@ -6525,6 +6602,7 @@ class $$UsuariosTableTableManager
                 usuario: usuario,
                 pinHash: pinHash,
                 rol: rol,
+                permisos: permisos,
                 activo: activo,
                 creadoEn: creadoEn,
               ),
@@ -6535,6 +6613,7 @@ class $$UsuariosTableTableManager
                 required String usuario,
                 required String pinHash,
                 required RolUsuario rol,
+                Value<String?> permisos = const Value.absent(),
                 Value<bool> activo = const Value.absent(),
                 Value<DateTime> creadoEn = const Value.absent(),
               }) => UsuariosCompanion.insert(
@@ -6543,6 +6622,7 @@ class $$UsuariosTableTableManager
                 usuario: usuario,
                 pinHash: pinHash,
                 rol: rol,
+                permisos: permisos,
                 activo: activo,
                 creadoEn: creadoEn,
               ),

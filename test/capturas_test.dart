@@ -27,6 +27,7 @@ import 'package:netmax_manager/domain/dashboard.dart';
 import 'package:netmax_manager/domain/reportes.dart';
 import 'package:netmax_manager/main.dart';
 import 'package:netmax_manager/providers/providers.dart';
+import 'package:netmax_manager/providers/sesion.dart';
 import 'package:netmax_manager/providers/zoom.dart';
 import 'package:netmax_manager/reportes/pdf_reportes.dart';
 
@@ -76,6 +77,25 @@ Cliente _cliente(int id, String nombre, String zona, String tel,
       estado: estado,
       creadoEn: DateTime(2025, 3, 15),
     );
+
+final _usuarios = [
+  Usuario(
+      id: 1,
+      nombre: 'Edith',
+      usuario: 'edith',
+      pinHash: '',
+      rol: RolUsuario.propietario,
+      activo: true,
+      creadoEn: DateTime(2026, 6, 1)),
+  Usuario(
+      id: 2,
+      nombre: 'Luis',
+      usuario: 'luis',
+      pinHash: '',
+      rol: RolUsuario.admin,
+      activo: true,
+      creadoEn: DateTime(2026, 7, 1)),
+];
 
 const _planes = [
   Plan(id: 1, nombre: '10 Mbps', velocidadMbps: 10, precioBase: 25000, activo: true),
@@ -288,6 +308,8 @@ Future<void> _capturar(
   Finder? tocar,
   double zoom = 1.0,
   Future<void> Function(WidgetTester tester)? despues,
+  bool conSesion = true,
+  List<Usuario>? usuarios,
 }) async {
   // En las pruebas las sombras se dibujan como un borde negro; aquí se quieren reales.
   debugDisableShadows = false;
@@ -296,11 +318,17 @@ Future<void> _capturar(
   addTearDown(tester.view.reset);
 
   await tester.pumpWidget(ProviderScope(
-    overrides: [..._datosSimulados(), zoomInicialProvider.overrideWithValue(zoom)],
+    overrides: [
+      ..._datosSimulados(),
+      zoomInicialProvider.overrideWithValue(zoom),
+      sesionInicialProvider.overrideWithValue(conSesion ? _usuarios.first : null),
+      usuariosProvider.overrideWith((ref) => Stream.value(usuarios ?? _usuarios)),
+      siguienteFolioProvider.overrideWith((ref) async => 130),
+    ],
     child: const NetMaxApp(),
   ));
   await tester.pumpAndSettle();
-  if (ruta != '/inicio') {
+  if (ruta != '/inicio' && conSesion) {
     final router = GoRouter.of(tester.element(find.byType(Scaffold).first));
     // Las secciones principales se abren como pestaña; el resto, encima.
     const secciones = ['/clientes', '/adeudos', '/reportes', '/configuracion'];
@@ -391,7 +419,7 @@ void main() {
       skip: !_activo);
   testWidgets('captura 24_configuracion_escritorio',
       (tester) => _capturar(tester, '24_configuracion_escritorio', '/configuracion',
-          tamano: escritorio),
+          tamano: const Size(1366, 1900)),
       skip: !_activo);
   testWidgets('captura 25_ficha_acciones_escritorio',
       (tester) => _capturar(tester, '25_ficha_acciones_escritorio', '/clientes/1',
@@ -412,6 +440,31 @@ void main() {
   testWidgets('captura 28_inicio_zoom_80',
       (tester) => _capturar(tester, '28_inicio_zoom_80', '/inicio',
           tamano: escritorio, zoom: 0.8),
+      skip: !_activo);
+  testWidgets('captura 29_acceso_escritorio',
+      (tester) => _capturar(tester, '29_acceso_escritorio', '/inicio',
+          tamano: escritorio, conSesion: false),
+      skip: !_activo);
+  testWidgets('captura 30_primer_usuario_celular',
+      (tester) => _capturar(tester, '30_primer_usuario_celular', '/inicio',
+          conSesion: false, usuarios: const []),
+      skip: !_activo);
+  testWidgets('captura 32_usuario_permisos',
+      (tester) => _capturar(tester, '32_usuario_permisos', '/configuracion',
+          tamano: const Size(1366, 1300), despues: (tester) async {
+        final boton = find.byTooltip('Editar permisos o cambiar PIN').last;
+        await tester.ensureVisible(boton);
+        await tester.pumpAndSettle();
+        await tester.tap(boton);
+        await tester.pumpAndSettle();
+      }),
+      skip: !_activo);
+  testWidgets('captura 31_ficha_pestana_equipos',
+      (tester) => _capturar(tester, '31_ficha_pestana_equipos', '/clientes',
+          tamano: escritorio, tocar: find.text('Ana López Martínez'), despues: (tester) async {
+        await tester.tap(find.textContaining('Equipos').last);
+        await tester.pumpAndSettle();
+      }),
       skip: !_activo);
   testWidgets('captura 23_panel_compacto',
       (tester) => _capturar(tester, '23_panel_compacto', '/clientes',

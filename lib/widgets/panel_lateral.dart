@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/marca.dart';
+import '../providers/sesion.dart';
 import '../providers/zoom.dart';
+import '../screens/sesion/acceso_screen.dart' show etiquetaPerfil;
 
 /// Una sección del panel.
 class DestinoPanel {
@@ -103,6 +105,7 @@ class PanelLateral extends ConsumerWidget {
               onAcercar: control.acercar,
               onRestablecer: control.restablecer,
             ),
+            _UsuarioSesion(extendido: extendido),
             const SizedBox(height: 12),
           ],
                 ),
@@ -264,6 +267,64 @@ class _ControlZoom extends StatelessWidget {
           alejar,
           porcentaje,
           acercar,
+        ],
+      ),
+    );
+  }
+}
+
+/// Usuario de la sesión y botón para cerrarla.
+class _UsuarioSesion extends ConsumerWidget {
+  const _UsuarioSesion({required this.extendido});
+
+  final bool extendido;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final usuario = ref.watch(sesionProvider);
+    if (usuario == null) return const SizedBox.shrink();
+    const crema = ColoresNetMax.crema;
+    final salir = IconButton(
+      tooltip: 'Cerrar sesión',
+      color: crema,
+      icon: const Icon(Icons.logout),
+      onPressed: () => ref.read(sesionProvider.notifier).cerrar(),
+    );
+    final avatar = CircleAvatar(
+      radius: 16,
+      backgroundColor: ColoresNetMax.verdeClaro.withValues(alpha: 0.2),
+      foregroundColor: ColoresNetMax.verdeClaro,
+      child: Text(usuario.nombre.isEmpty ? '?' : usuario.nombre[0].toUpperCase(),
+          style: const TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.w600)),
+    );
+    if (!extendido) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Column(children: [Tooltip(message: usuario.nombre, child: avatar), salir]),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
+      child: Row(
+        children: [
+          avatar,
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(usuario.nombre,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontFamily: 'Outfit', color: crema, fontWeight: FontWeight.w600)),
+                Text(etiquetaPerfil(usuario),
+                    style: TextStyle(
+                        fontFamily: 'Outfit', fontSize: 12, color: crema.withValues(alpha: 0.7))),
+              ],
+            ),
+          ),
+          salir,
         ],
       ),
     );

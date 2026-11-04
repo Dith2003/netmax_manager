@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../providers/sesion.dart';
 import '../screens/adeudos/adeudos_screen.dart';
 import '../screens/clientes/cliente_detalle_screen.dart';
 import '../screens/clientes/cliente_form_screen.dart';
@@ -94,7 +96,7 @@ GoRouter crearRouter() {
 }
 
 /// Navegación principal: panel lateral en escritorio y barra inferior en el celular.
-class _ConNavegacion extends StatelessWidget {
+class _ConNavegacion extends ConsumerWidget {
   const _ConNavegacion({required this.ubicacion, required this.child});
 
   final String ubicacion;
@@ -134,9 +136,21 @@ class _ConNavegacion extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
-    final encontrado = _destinos.indexWhere((d) => ubicacion.startsWith(d.ruta));
-    final inferior = _inferiores.indexWhere((d) => ubicacion.startsWith(d.ruta));
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Solo se muestran las secciones que el usuario tiene permiso de usar.
+    final permisos = ref.watch(permisosProvider);
+    final destinos = [
+      for (final d in _destinos)
+        if (d.ruta != '/reportes' || permisos.verReportes) d,
+    ];
+    final inferiores = [
+      for (final d in _inferiores)
+        if ((d.ruta != '/configuracion' || permisos.verConfiguracion) &&
+            (d.ruta != '/respaldos' || permisos.verRespaldos))
+          d,
+    ];
+    final encontrado = destinos.indexWhere((d) => ubicacion.startsWith(d.ruta));
+    final inferior = inferiores.indexWhere((d) => ubicacion.startsWith(d.ruta));
     final indice = encontrado < 0 ? (inferior >= 0 ? -1 : 0) : encontrado;
     final ancho = MediaQuery.sizeOf(context).width;
 
@@ -145,13 +159,13 @@ class _ConNavegacion extends StatelessWidget {
         body: Row(
           children: [
             PanelLateral(
-              destinos: _destinos,
+              destinos: destinos,
               seleccionado: indice,
               extendido: ancho >= 1180,
-              onSeleccionar: (i) => context.go(_destinos[i].ruta),
-              destinosInferiores: _inferiores,
+              onSeleccionar: (i) => context.go(destinos[i].ruta),
+              destinosInferiores: inferiores,
               inferiorSeleccionado: inferior,
-              onInferior: (i) => context.go(_inferiores[i].ruta),
+              onInferior: (i) => context.go(inferiores[i].ruta),
             ),
             Expanded(child: child),
           ],
@@ -163,9 +177,9 @@ class _ConNavegacion extends StatelessWidget {
       body: child,
       bottomNavigationBar: NavigationBar(
         selectedIndex: indice < 0 ? 0 : indice,
-        onDestinationSelected: (i) => context.go(_destinos[i].ruta),
+        onDestinationSelected: (i) => context.go(destinos[i].ruta),
         destinations: [
-          for (final d in _destinos)
+          for (final d in destinos)
             NavigationDestination(
               icon: Icon(d.icono),
               selectedIcon: Icon(d.iconoSeleccionado),

@@ -11,6 +11,7 @@ import 'package:netmax_manager/data/repositories/vencimientos_repository.dart';
 import 'package:netmax_manager/domain/clientes.dart';
 import 'package:netmax_manager/domain/planes.dart';
 import 'package:netmax_manager/providers/providers.dart';
+import 'package:netmax_manager/providers/sesion.dart';
 import 'package:netmax_manager/screens/clientes/cliente_form_screen.dart';
 import 'package:netmax_manager/screens/configuracion/configuracion_screen.dart';
 
@@ -131,6 +132,7 @@ void main() {
             ])),
         contratacionesPersonalizadasProvider.overrideWith(
             (ref) => Stream.value(const [(detalle: 'Equipo a pagos', clientes: 2)])),
+        usuariosProvider.overrideWith((ref) => Stream.value(<Usuario>[])),
       ],
       child: const MaterialApp(home: ConfiguracionScreen()),
     ));
@@ -188,5 +190,25 @@ void main() {
     await tester.tap(find.text('Registrar cliente'));
     await tester.pumpAndSettle();
     expect(find.text('Describe el tipo de contratación'), findsOneWidget);
+  });
+
+  testWidgets('un administrador no puede cambiar la configuración', (tester) async {
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        sesionInicialProvider.overrideWithValue(Usuario(
+          id: 2,
+          nombre: 'Luis',
+          usuario: 'luis',
+          pinHash: '',
+          rol: RolUsuario.admin,
+          activo: true,
+          creadoEn: DateTime(2026, 11, 4),
+        )),
+      ],
+      child: const MaterialApp(home: ConfiguracionScreen()),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('No tienes permiso para cambiar la configuración.'), findsOneWidget);
+    expect(find.text('Nuevo plan'), findsNothing);
   });
 }

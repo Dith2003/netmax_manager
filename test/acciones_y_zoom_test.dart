@@ -27,7 +27,8 @@ class _RepoFalso extends Fake implements ClientesRepository {
   final cambios = <(int, EstadoCliente, String?)>[];
 
   @override
-  Future<void> cambiarEstado(int clienteId, EstadoCliente nuevo, {String? motivo}) async {
+  Future<void> cambiarEstado(int clienteId, EstadoCliente nuevo,
+      {String? motivo, int? usuarioId}) async {
     cambios.add((clienteId, nuevo, motivo));
   }
 }

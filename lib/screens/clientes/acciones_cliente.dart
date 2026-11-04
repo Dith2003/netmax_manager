@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/etiquetas.dart';
 import '../../data/db/database.dart';
 import '../../providers/providers.dart';
+import '../../providers/sesion.dart';
 import 'dialogos.dart';
 import 'modales.dart';
 
@@ -59,6 +60,7 @@ Future<void> ejecutarAccionCliente(
   // desaparecer de la lista (p. ej. con el filtro "Activos").
   final mensajero = ScaffoldMessenger.of(context);
   final repo = ref.read(clientesRepositoryProvider);
+  final usuarioId = ref.read(sesionProvider)?.id;
   final motivo = await confirmarCambioEstado(
     context,
     nombreCliente: cliente.nombre,
@@ -66,7 +68,8 @@ Future<void> ejecutarAccionCliente(
   );
   if (motivo == null) return;
   try {
-    await repo.cambiarEstado(cliente.id, nuevo, motivo: motivo.isEmpty ? null : motivo);
+    await repo.cambiarEstado(cliente.id, nuevo,
+        motivo: motivo.isEmpty ? null : motivo, usuarioId: usuarioId);
     mensajero
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text('${cliente.nombre}: ${nuevo.etiqueta.toLowerCase()}')));
@@ -95,8 +98,10 @@ class BotonesCliente extends ConsumerWidget {
           AccionCliente.cancelar => scheme.error,
         };
 
+    final permisos = ref.watch(permisosProvider);
     final botones = [
       for (final a in accionesDisponibles(cliente.estado))
+        if (a == AccionCliente.editar ? permisos.gestionarClientes : permisos.cambiarEstadoClientes)
         compacto
             ? IconButton(
                 tooltip: a.etiqueta,

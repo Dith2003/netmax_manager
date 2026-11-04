@@ -257,14 +257,17 @@ Future<Uint8List> pdfPagos({
         _sinDatos('No hay pagos en este periodo.')
       else
         _tabla(
-          encabezados: ['Fecha', 'Cliente', 'Método', 'Folio', 'Cubre', 'Monto'],
+          encabezados: ['Fecha', 'Cliente', 'Método', 'Folio / Ref.', 'Cubre', 'Monto'],
           filas: [
             for (final p in pagos)
               [
                 formatoFecha(p.fecha),
                 p.cliente,
                 p.metodo.etiqueta,
-                p.folio ?? '',
+                [
+                  if (p.id != null) 'N° ${numeroComprobante(p.id!)}',
+                  if (p.folio != null) 'Ref. ${p.folio}',
+                ].join('\n'),
                 p.cubre,
                 formatoDinero(p.monto),
               ],
@@ -275,7 +278,7 @@ Future<Uint8List> pdfPagos({
             0: pw.FixedColumnWidth(60),
             1: pw.FlexColumnWidth(3),
             2: pw.FixedColumnWidth(70),
-            3: pw.FixedColumnWidth(60),
+            3: pw.FixedColumnWidth(80),
             4: pw.FlexColumnWidth(4),
             5: pw.FixedColumnWidth(70),
           },

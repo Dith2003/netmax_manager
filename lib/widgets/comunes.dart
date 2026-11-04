@@ -45,7 +45,8 @@ class ErrorVista extends StatelessWidget {
   }
 }
 
-/// Título de sección con explicación y botón opcionales.
+/// Título de sección con explicación y botón opcionales ([titulo] vacío: solo la
+/// explicación, p. ej. dentro de una pestaña que ya lleva el nombre).
 class SeccionTitulo extends StatelessWidget {
   const SeccionTitulo(this.titulo, {super.key, this.accion, this.descripcion, this.icono});
 
@@ -76,10 +77,10 @@ class SeccionTitulo extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(titulo, style: texto.titleMedium),
+                if (titulo.isNotEmpty) Text(titulo, style: texto.titleMedium),
                 if (descripcion != null)
                   Padding(
-                    padding: const EdgeInsets.only(top: 2, right: 8),
+                    padding: EdgeInsets.only(top: titulo.isEmpty ? 0 : 2, right: 8),
                     child: Text(descripcion!,
                         style: texto.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
                   ),

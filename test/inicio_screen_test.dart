@@ -6,6 +6,17 @@ import 'package:netmax_manager/data/db/database.dart';
 import 'package:netmax_manager/domain/dashboard.dart';
 import 'package:netmax_manager/main.dart';
 import 'package:netmax_manager/providers/providers.dart';
+import 'package:netmax_manager/providers/sesion.dart';
+
+final _propietario = Usuario(
+  id: 1,
+  nombre: 'Edith',
+  usuario: 'edith',
+  pinHash: '',
+  rol: RolUsuario.propietario,
+  activo: true,
+  creadoEn: DateTime(2026, 11, 1),
+);
 
 /// La app abre en Inicio con el resumen (datos simulados) y navega a Clientes.
 void main() {
@@ -46,6 +57,9 @@ void main() {
         resumenProvider.overrideWith((ref) => Stream.value(resumen)),
         clientesProvider.overrideWith((ref, filtro) => Stream.value(<Cliente>[])),
         ultimoRespaldoProvider.overrideWith((ref) => Stream.value(null)),
+        // Sesión abierta (la pantalla de acceso se prueba en sesion_test.dart).
+        sesionInicialProvider.overrideWithValue(_propietario),
+        usuariosProvider.overrideWith((ref) => Stream.value([_propietario])),
       ],
       child: const NetMaxApp(),
     ));

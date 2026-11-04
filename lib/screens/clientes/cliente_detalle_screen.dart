@@ -7,8 +7,10 @@ import '../../core/fechas.dart';
 import '../../data/db/database.dart';
 import '../../domain/clientes.dart';
 import '../../domain/cobranza.dart';
+import '../../domain/reportes.dart' show numeroComprobante;
 import '../../domain/vencimientos.dart';
 import '../../providers/providers.dart';
+import '../../providers/sesion.dart';
 import '../../widgets/comunes.dart';
 import '../../widgets/disposicion.dart';
 import '../pagos/comprobante_screen.dart';
@@ -92,7 +94,8 @@ class _Ficha extends ConsumerWidget {
         automaticallyImplyLeading: !enModal,
         title: Text(cliente.nombre),
       ),
-      floatingActionButton: cliente.estado == EstadoCliente.cancelado
+      floatingActionButton:
+          cliente.estado == EstadoCliente.cancelado || !ref.watch(permisosProvider).registrarPagos
           ? null
           : FloatingActionButton.extended(
               onPressed: () => registrarPagoConComprobante(context, cliente.id),
@@ -148,10 +151,7 @@ class _Ficha extends ConsumerWidget {
               ),
             ),
           ),
-          _SeccionPagos(cliente: cliente),
-          _SeccionInstalaciones(clienteId: cliente.id),
-          _SeccionEquipos(cliente: cliente),
-          _SeccionHistorial(clienteId: cliente.id),
+          _PestanasCliente(cliente: cliente),
         ],
       ),
       ),
@@ -215,7 +215,9 @@ class _AvisoEquipoPrestado extends ConsumerWidget {
       ),
       actions: [
         TextButton(
-          onPressed: () async {
+          onPressed: !ref.watch(permisosProvider).gestionarClientes
+              ? null
+              : () async {
             final datos = await mostrarDialogoEquipo(
               context,
               propiedadSugerida: PropiedadEquipo.netmax,
@@ -252,6 +254,8 @@ class _SeccionPagos extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
 
     final cargos = ref.watch(cargosProvider(cliente.id));
+    final puedeCancelar = ref.watch(permisosProvider).cancelarPagos;
+    final nombres = ref.watch(nombresUsuariosProvider);
     final resumen = periodos.when(
       loading: () => const LinearProgressIndicator(),
       error: (e, _) => ErrorVista(e),
@@ -283,8 +287,7 @@ class _SeccionPagos extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SeccionTitulo(
-          'Pagos',
-          icono: Icons.payments_outlined,
+          '', // el nombre está en la pestaña
           descripcion: 'Pagos recibidos de este cliente. Toca uno para ver o descargar su '
               'comprobante.',
         ),
@@ -313,7 +316,11 @@ class _SeccionPagos extends ConsumerWidget {
                       if (p.meses.isNotEmpty)
                         'Cubre ${describirMeses(p.meses.map((m) => m.mes).toList())}',
                       for (final c in p.cargos) 'Cargo: ${c.concepto}',
-                      if (p.pago.folio != null) 'Folio ${p.pago.folio}',
+                      'N° ${numeroComprobante(p.pago.id)}',
+                      if (p.pago.folio != null) 'Ref. ${p.pago.folio}',
+                      if (p.pago.registradoPor != null &&
+                          nombres[p.pago.registradoPor] != null)
+                        'por ${nombres[p.pago.registradoPor]}',
                       if (p.pago.cancelado) 'CANCELADO',
                     ].join(' · ')),
                     onTap: () => abrirComprobante(context, p.pago.id),
@@ -325,7 +332,7 @@ class _SeccionPagos extends ConsumerWidget {
                       itemBuilder: (_) => [
                         const PopupMenuItem(
                             value: 'comprobante', child: Text('Ver / descargar comprobante')),
-                        if (!p.pago.cancelado)
+                        if (!p.pago.cancelado && puedeCancelar)
                           const PopupMenuItem(value: 'cancelar', child: Text('Cancelar pago')),
                       ],
                     ),
@@ -353,11 +360,12 @@ class _SeccionInstalaciones extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SeccionTitulo(
-          'Instalaciones',
-          icono: Icons.construction,
+          '', // el nombre está en la pestaña
           descripcion: 'Visitas para instalar el servicio en el domicilio de este cliente: '
               'fecha, técnico y costo de la instalación, y si ya la pagó.',
-          accion: TextButton.icon(
+          accion: !ref.watch(permisosProvider).gestionarClientes
+              ? null
+              : TextButton.icon(
             icon: const Icon(Icons.add),
             label: const Text('Agregar'),
             onPressed: () async {
@@ -386,7 +394,9 @@ class _SeccionInstalaciones extends ConsumerWidget {
                         ? FilterChip(
                             label: Text(i.pagado ? 'Pagada' : 'Pendiente'),
                             selected: i.pagado,
-                            onSelected: (v) => repo.marcarInstalacionPagada(i.id, v),
+                            onSelected: ref.watch(permisosProvider).gestionarClientes
+                                ? (v) => repo.marcarInstalacionPagada(i.id, v)
+                                : null,
                           )
                         : null,
                   ),
@@ -452,17 +462,19 @@ class _SeccionEquipos extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final equipos = ref.watch(equiposProvider(cliente.id));
+    final permisos = ref.watch(permisosProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SeccionTitulo(
-          'Equipos',
-          icono: Icons.router_outlined,
+          '', // el nombre está en la pestaña
           descripcion: 'Antenas, routers y demás equipo en el domicilio de este cliente. '
               'Si es de NET_MAX (prestado) queda registrado para recuperarlo o cobrarlo si '
               'cancela; si es del cliente, solo como referencia.',
-          accion: TextButton.icon(
+          accion: !permisos.gestionarClientes
+              ? null
+              : TextButton.icon(
             icon: const Icon(Icons.add),
             label: const Text('Agregar'),
             onPressed: () async {
@@ -498,16 +510,19 @@ class _SeccionEquipos extends ConsumerWidget {
                       if (e.fechaEntrega != null) 'Entregado ${formatoFechaCorta(e.fechaEntrega!)}',
                       if (e.fechaRetiro != null) 'Retirado ${formatoFechaCorta(e.fechaRetiro!)}',
                     ].join(' · ')),
-                    trailing: e.fechaRetiro == null
+                    trailing: e.fechaRetiro == null &&
+                            (permisos.gestionarClientes ||
+                                (permisos.ajustarCuentas && e.propiedad == PropiedadEquipo.netmax))
                         ? PopupMenuButton<String>(
                             tooltip: 'Opciones del equipo',
                             onSelected: (opcion) => opcion == 'retirar'
                                 ? _retirar(context, ref, e)
                                 : _cobrarNoDevuelto(context, ref, e),
                             itemBuilder: (_) => [
-                              const PopupMenuItem(
-                                  value: 'retirar', child: Text('Registrar retiro')),
-                              if (e.propiedad == PropiedadEquipo.netmax)
+                              if (permisos.gestionarClientes)
+                                const PopupMenuItem(
+                                    value: 'retirar', child: Text('Registrar retiro')),
+                              if (e.propiedad == PropiedadEquipo.netmax && permisos.ajustarCuentas)
                                 const PopupMenuItem(
                                     value: 'cobrar', child: Text('Cobrar equipo no devuelto')),
                             ],
@@ -531,13 +546,13 @@ class _SeccionHistorial extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final historial = ref.watch(historialProvider(clienteId));
+    final nombres = ref.watch(nombresUsuariosProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SeccionTitulo(
-          'Historial de estados',
-          icono: Icons.history,
+          '', // el nombre está en la pestaña
           descripcion: 'Altas, suspensiones, reactivaciones y cancelaciones, con su motivo.',
         ),
         historial.when(
@@ -557,6 +572,7 @@ class _SeccionHistorial extends ConsumerWidget {
                     subtitle: Text([
                       formatoFechaCorta(h.fecha),
                       if (h.motivo != null) h.motivo!,
+                      if (nombres[h.usuarioId] != null) 'por ${nombres[h.usuarioId]}',
                     ].join(' · ')),
                   ),
               ],
@@ -578,6 +594,97 @@ class _Vacio extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Text(texto, style: Theme.of(context).textTheme.bodySmall),
+    );
+  }
+}
+
+/// Pestañas de la ficha: Pagos, Instalaciones, Equipos e Historial, para que
+/// cada tipo de información se vea por separado.
+class _PestanasCliente extends ConsumerStatefulWidget {
+  const _PestanasCliente({required this.cliente});
+
+  final Cliente cliente;
+
+  @override
+  ConsumerState<_PestanasCliente> createState() => _PestanasClienteState();
+}
+
+class _PestanasClienteState extends ConsumerState<_PestanasCliente>
+    with SingleTickerProviderStateMixin {
+  late final TabController _control = TabController(length: 4, vsync: this)
+    ..addListener(() {
+      if (!_control.indexIsChanging) setState(() {});
+    });
+
+  @override
+  void dispose() {
+    _control.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.cliente;
+    int? cuantos<T>(AsyncValue<List<T>> v) => v.whenOrNull(data: (l) => l.length);
+    String etiqueta(String nombre, int? n) => n == null || n == 0 ? nombre : '$nombre ($n)';
+
+    final pestanas = [
+      (Icons.payments_outlined, etiqueta('Pagos', cuantos(ref.watch(pagosProvider(c.id))))),
+      (
+        Icons.construction,
+        etiqueta('Instalaciones', cuantos(ref.watch(instalacionesProvider(c.id))))
+      ),
+      (Icons.router_outlined, etiqueta('Equipos', cuantos(ref.watch(equiposProvider(c.id))))),
+      (Icons.history, 'Historial'),
+    ];
+    final contenido = switch (_control.index) {
+      0 => _SeccionPagos(cliente: c),
+      1 => _SeccionInstalaciones(clienteId: c.id),
+      2 => _SeccionEquipos(cliente: c),
+      _ => _SeccionHistorial(clienteId: c.id),
+    };
+    final scheme = Theme.of(context).colorScheme;
+
+    return Card(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Material(
+            color: scheme.surfaceContainerLow,
+            child: TabBar(
+              controller: _control,
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              labelColor: scheme.secondary,
+              unselectedLabelColor: scheme.onSurfaceVariant,
+              indicatorColor: scheme.secondary,
+              tabs: [
+                for (final (icono, texto) in pestanas)
+                  Tab(
+                    height: 52,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [Icon(icono, size: 20), const SizedBox(width: 8), Text(texto)],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 150),
+            child: KeyedSubtree(
+              key: ValueKey(_control.index),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: contenido,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
