@@ -7,6 +7,7 @@ import 'package:printing/printing.dart';
 
 import '../../core/mes.dart';
 import '../../providers/providers.dart';
+import '../../reportes/guardar_pdf.dart';
 import '../../reportes/pdf_reportes.dart';
 import '../../widgets/comunes.dart';
 import '../../widgets/disposicion.dart';
@@ -121,6 +122,7 @@ class _ReporteScreenState extends ConsumerState<ReporteScreen> {
       canDebug: false,
       pdfFileName: _nombreArchivo,
       onError: (context, error) => ErrorVista(error),
+      actions: accionesPdf(_nombreArchivo),
     );
 
     // Escritorio: opciones a la izquierda y la vista previa a la derecha.
@@ -180,9 +182,27 @@ class _ReporteScreenState extends ConsumerState<ReporteScreen> {
                       ),
                     ),
                   const SizedBox(height: 20),
+                  if (esComputadora) ...[
+                    FilledButton.icon(
+                      onPressed: () => guardarPdf(
+                          context, _nombreArchivo, () => _generar(PdfPageFormat.letter)),
+                      icon: const Icon(Icons.save_alt),
+                      label: const Text('Guardar PDF'),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  OutlinedButton.icon(
+                    onPressed: () => Printing.layoutPdf(
+                      onLayout: _generar,
+                      name: _nombreArchivo,
+                      format: PdfPageFormat.letter,
+                    ),
+                    icon: const Icon(Icons.print_outlined),
+                    label: const Text('Imprimir'),
+                  ),
+                  const SizedBox(height: 12),
                   Text(
-                    'Usa los botones de la barra de la vista previa para imprimir o '
-                    'compartir el PDF.',
+                    'También puedes usar los botones de la barra de la vista previa.',
                     style: texto.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                   ),
                 ],

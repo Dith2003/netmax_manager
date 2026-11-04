@@ -43,6 +43,11 @@ class InicioScreen extends ConsumerWidget {
             icon: const Icon(Icons.backup),
             onPressed: () => context.push('/respaldos'),
           ),
+          IconButton(
+            tooltip: 'Configuración',
+            icon: const Icon(Icons.settings),
+            onPressed: () => context.push('/configuracion'),
+          ),
           const SizedBox(width: 8),
         ],
       ),

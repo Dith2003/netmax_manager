@@ -50,6 +50,8 @@ class Clientes extends Table {
   IntColumn get precioMensual => integer()();
   IntColumn get diaCorte => integer().check(diaCorte.isBetweenValues(1, 28))();
   TextColumn get tipoContratacion => textEnum<TipoContratacion>()();
+  /// Descripción libre cuando el tipo de contratación es `otro` (v4).
+  TextColumn get tipoContratacionDetalle => text().nullable()();
   DateTimeColumn get fechaAlta => dateTime()();
   /// Primer mes que se cobra, 'YYYY-MM' (puede ser el mes del alta, el siguiente u otro).
   /// Nullable solo por la migración; siempre se llena. Ver domain/vencimientos.dart.
@@ -224,7 +226,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -244,6 +246,10 @@ class AppDatabase extends _$AppDatabase {
             // v3: cargos extra.
             await m.createTable(cargos);
             await m.createTable(cargoAplicaciones);
+          }
+          if (from < 4) {
+            // v4: tipo de contratación personalizado ("otro" + descripción libre).
+            await m.addColumn(clientes, clientes.tipoContratacionDetalle);
           }
         },
         beforeOpen: (details) async {

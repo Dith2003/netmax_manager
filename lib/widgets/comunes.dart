@@ -45,21 +45,46 @@ class ErrorVista extends StatelessWidget {
   }
 }
 
-/// Título de sección con botón opcional a la derecha.
+/// Título de sección con explicación y botón opcionales.
 class SeccionTitulo extends StatelessWidget {
-  const SeccionTitulo(this.titulo, {super.key, this.accion});
+  const SeccionTitulo(this.titulo, {super.key, this.accion, this.descripcion, this.icono});
 
   final String titulo;
   final Widget? accion;
 
+  /// Texto corto que explica para qué sirve la sección.
+  final String? descripcion;
+  final IconData? icono;
+
   @override
   Widget build(BuildContext context) {
+    final texto = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 20, 8, 4),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (icono != null) ...[
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Icon(icono, size: 20, color: scheme.secondary),
+            ),
+            const SizedBox(width: 8),
+          ],
           Expanded(
-            child: Text(titulo, style: Theme.of(context).textTheme.titleMedium),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(titulo, style: texto.titleMedium),
+                if (descripcion != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2, right: 8),
+                    child: Text(descripcion!,
+                        style: texto.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                  ),
+              ],
+            ),
           ),
           ?accion,
         ],

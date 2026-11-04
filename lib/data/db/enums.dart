@@ -3,7 +3,9 @@ library;
 
 enum RolUsuario { propietario, admin }
 
-enum TipoContratacion { compraEquipo, equipoPropio, equipoPrestado }
+/// [otro]: contratación personalizada; la descripción va en
+/// `clientes.tipo_contratacion_detalle`.
+enum TipoContratacion { compraEquipo, equipoPropio, equipoPrestado, otro }
 
 enum EstadoCliente { activo, suspendido, cancelado }
 

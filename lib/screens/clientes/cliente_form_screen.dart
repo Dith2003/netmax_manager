@@ -13,7 +13,11 @@ import '../../domain/vencimientos.dart';
 import '../../providers/providers.dart';
 import '../../widgets/comunes.dart';
 import '../../widgets/disposicion.dart';
+import '../configuracion/dialogo_plan.dart';
 import 'modales.dart';
+
+/// Valor especial del selector de plan: crear un plan nuevo ahí mismo.
+const _crearPlan = -1;
 
 /// Alta (clienteId == null) o edición de un cliente.
 class ClienteFormScreen extends ConsumerStatefulWidget {
@@ -42,6 +46,15 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
   final _notas = TextEditingController();
 
   int? _planId;
+
+  /// Plan con el que se abrió la edición (se muestra aunque esté desactivado).
+  int? _planOriginal;
+
+  /// Cambia para reconstruir el selector de plan (p. ej. al cancelar "Crear plan").
+  int _versionPlan = 0;
+
+  /// Descripción de la contratación cuando el tipo es "otro".
+  String _detalleContratacion = '';
   late int _diaCorte;
   TipoContratacion _tipo = TipoContratacion.equipoPropio;
   late DateTime _fechaAlta;
@@ -79,6 +92,8 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
       _precio.text = _centavosATexto(c.precioMensual);
       _notas.text = c.notas ?? '';
       _planId = c.planId;
+      _planOriginal = c.planId;
+      _detalleContratacion = c.tipoContratacionDetalle ?? '';
       _diaCorte = c.diaCorte;
       _tipo = c.tipoContratacion;
       _fechaAlta = c.fechaAlta;
@@ -97,18 +112,31 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
     super.dispose();
   }
 
-  /// 25000 -> "250", 25050 -> "250.50" (para escribir en el campo de texto).
-  static String _centavosATexto(int centavos) {
-    final pesos = centavos ~/ 100;
-    final cent = centavos % 100;
-    return cent == 0 ? '$pesos' : '$pesos.${cent.toString().padLeft(2, '0')}';
-  }
+  static String _centavosATexto(int centavos) => centavosATexto(centavos);
 
   void _seleccionarPlan(Plan plan) {
     setState(() {
       _planId = plan.id;
       if (!_precioEditado) _precio.text = _centavosATexto(plan.precioBase);
     });
+  }
+
+  /// "Crear plan nuevo…": captura el plan, lo guarda en el catálogo y lo elige.
+  Future<void> _crearPlanNuevo() async {
+    final datos = await mostrarDialogoPlan(context);
+    if (!mounted) return;
+    if (datos == null) {
+      setState(() => _versionPlan++); // regresa el selector al plan anterior
+      return;
+    }
+    final id = await ref.read(planesRepositoryProvider).crear(datos);
+    if (!mounted) return;
+    setState(() {
+      _planId = id;
+      _versionPlan++;
+      if (!_precioEditado) _precio.text = _centavosATexto(datos.precioBase);
+    });
+    mostrarMensaje(context, 'Plan creado: ${datos.nombre}');
   }
 
   Future<void> _elegirFechaAlta() async {
@@ -146,6 +174,7 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
       precioMensual: textoACentavos(_precio.text),
       diaCorte: _diaCorte,
       tipoContratacion: _tipo,
+      tipoContratacionDetalle: textoONull(_detalleContratacion),
       fechaAlta: _fechaAlta,
       primerMesCobro: _primerMes,
       notas: textoONull(_notas.text),
@@ -181,7 +210,10 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final planes = ref.watch(planesProvider);
+    final todos = ref.watch(todosLosPlanesProvider);
+    // Para elegir: los activos y, al editar, el plan que ya tiene el cliente.
+    final planes = todos.whenData(
+        (lista) => [for (final p in lista) if (p.activo || p.id == _planOriginal) p]);
 
     return Scaffold(
       appBar: AppBar(
@@ -282,6 +314,33 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
     );
   }
 
+  /// Descripción libre de la contratación "otro", con sugerencias de las ya usadas.
+  Widget _campoDetalleContratacion() {
+    final usadas = ref.watch(contratacionesPersonalizadasProvider).whenOrNull(
+              data: (l) => [for (final d in l) d.detalle],
+            ) ??
+        const <String>[];
+    return Autocomplete<String>(
+      initialValue: TextEditingValue(text: _detalleContratacion),
+      optionsBuilder: (valor) =>
+          usadas.where((d) => coincideBusqueda(valor.text, [d]) && d != valor.text),
+      onSelected: (v) => _detalleContratacion = v,
+      fieldViewBuilder: (context, controlador, foco, alEnviar) => TextFormField(
+        controller: controlador,
+        focusNode: foco,
+        decoration: const InputDecoration(
+          labelText: '¿En qué consiste la contratación? *',
+          helperText: 'Ej. Equipo a pagos, servicio para negocio, convenio escolar…',
+          prefixIcon: Icon(Icons.edit_note),
+        ),
+        textCapitalization: TextCapitalization.sentences,
+        validator: validarDetalleContratacion,
+        onChanged: (v) => _detalleContratacion = v,
+        onFieldSubmitted: (_) => alEnviar(),
+      ),
+    );
+  }
+
   Widget _formulario(List<Plan> planes) {
     // Plan por defecto para un cliente nuevo: el primero (el más barato).
     if (_planId == null && planes.isNotEmpty) {
@@ -317,18 +376,38 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
       decoration: const InputDecoration(labelText: 'Referencia (cómo llegar)'),
     );
     final campoPlan = DropdownButtonFormField<int>(
-      initialValue: _planId,
+      key: ValueKey('plan-$_planId-$_versionPlan'),
+      initialValue: planes.any((p) => p.id == _planId) ? _planId : null,
       isExpanded: true,
-      decoration: const InputDecoration(labelText: 'Plan *'),
+      decoration: const InputDecoration(
+        labelText: 'Plan *',
+        helperText: 'Los planes se administran en Configuración',
+      ),
       items: [
         for (final p in planes)
           DropdownMenuItem(
             value: p.id,
-            child: Text('${p.nombre} · ${formatoDinero(p.precioBase)}'),
+            child: Text('${p.nombre} · ${formatoDinero(p.precioBase)}'
+                '${p.activo ? '' : ' (desactivado)'}'),
           ),
+        const DropdownMenuItem(
+          value: _crearPlan,
+          child: Row(
+            children: [
+              Icon(Icons.add_circle_outline, size: 18),
+              SizedBox(width: 8),
+              Flexible(child: Text('Crear plan nuevo…', overflow: TextOverflow.ellipsis)),
+            ],
+          ),
+        ),
       ],
+      validator: (id) => id == null || id == _crearPlan ? 'Elige un plan' : null,
       onChanged: (id) {
         if (id == null) return;
+        if (id == _crearPlan) {
+          _crearPlanNuevo();
+          return;
+        }
         _seleccionarPlan(planes.firstWhere((p) => p.id == id));
       },
     );
@@ -360,10 +439,14 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
     final campoTipo = DropdownButtonFormField<TipoContratacion>(
       initialValue: _tipo,
       isExpanded: true,
-      decoration: const InputDecoration(labelText: 'Tipo de contratación *'),
+      decoration: InputDecoration(
+        labelText: 'Tipo de contratación *',
+        helperText: _tipo.descripcion,
+        helperMaxLines: 3,
+      ),
       items: [
         for (final t in TipoContratacion.values)
-          DropdownMenuItem(value: t, child: Text(t.etiqueta)),
+          DropdownMenuItem(value: t, child: Text(t.etiqueta, overflow: TextOverflow.ellipsis)),
       ],
       onChanged: (t) {
         if (t != null) setState(() => _tipo = t);
@@ -407,6 +490,7 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
                   children: [
                     FilaCampos(izquierda: campoPlan, derecha: campoPrecio),
                     FilaCampos(izquierda: campoDiaCorte, derecha: campoTipo),
+                    if (_tipo == TipoContratacion.otro) _campoDetalleContratacion(),
                     FilaCampos(izquierda: campoFechaAlta, derecha: _campoPrimerMes()),
                   ],
                 ),

@@ -9,14 +9,34 @@ extension EtiquetaTipoContratacion on TipoContratacion {
         TipoContratacion.compraEquipo => 'Compra de equipo + instalación',
         TipoContratacion.equipoPropio => 'Equipo propio (solo conexión)',
         TipoContratacion.equipoPrestado => 'Equipo prestado por NET_MAX',
+        TipoContratacion.otro => 'Otro (personalizado)',
       };
 
   String get etiquetaCorta => switch (this) {
         TipoContratacion.compraEquipo => 'Compró equipo',
         TipoContratacion.equipoPropio => 'Equipo propio',
         TipoContratacion.equipoPrestado => 'Equipo prestado',
+        TipoContratacion.otro => 'Otro',
+      };
+
+  /// Qué incluye cada tipo (ayuda en el formulario y en Configuración).
+  String get descripcion => switch (this) {
+        TipoContratacion.compraEquipo =>
+          'El cliente compró la antena y pagó la instalación; el equipo es suyo.',
+        TipoContratacion.equipoPropio =>
+          'El cliente ya tenía su equipo; NET_MAX solo le da la conexión.',
+        TipoContratacion.equipoPrestado =>
+          'NET_MAX presta el equipo: se registra en Equipos para recuperarlo si cancela.',
+        TipoContratacion.otro =>
+          'Cualquier otro acuerdo: escribe en qué consiste al registrar al cliente.',
       };
 }
+
+/// Texto de la contratación de un cliente: si es "otro", su descripción libre.
+String textoContratacion(TipoContratacion tipo, String? detalle) =>
+    tipo == TipoContratacion.otro && (detalle?.trim().isNotEmpty ?? false)
+        ? detalle!.trim()
+        : tipo.etiqueta;
 
 extension EtiquetaEstadoCliente on EstadoCliente {
   String get etiqueta => switch (this) {

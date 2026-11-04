@@ -46,3 +46,10 @@ String formatoDineroCorto(int centavos) {
   final decimas = pesos ~/ 100000;
   return '\$${decimas ~/ 10}.${decimas % 10} M';
 }
+
+/// Centavos a texto para escribir en un campo: 25000 -> "250", 25050 -> "250.50".
+String centavosATexto(int centavos) {
+  final pesos = centavos ~/ 100;
+  final cent = centavos % 100;
+  return cent == 0 ? '$pesos' : '$pesos.${cent.toString().padLeft(2, '0')}';
+}

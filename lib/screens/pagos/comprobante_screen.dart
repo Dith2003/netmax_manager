@@ -7,6 +7,7 @@ import 'package:printing/printing.dart';
 
 import '../../domain/reportes.dart';
 import '../../providers/providers.dart';
+import '../../reportes/guardar_pdf.dart';
 import '../../reportes/pdf_reportes.dart';
 import '../../widgets/comunes.dart';
 
@@ -43,6 +44,7 @@ class ComprobanteScreen extends ConsumerWidget {
         canDebug: false,
         pdfFileName: 'netmax_comprobante_${numeroComprobante(pagoId)}.pdf',
         onError: (context, error) => ErrorVista(error),
+        actions: accionesPdf('netmax_comprobante_${numeroComprobante(pagoId)}.pdf'),
       ),
     );
   }
