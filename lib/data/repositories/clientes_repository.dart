@@ -1,7 +1,9 @@
 import 'package:drift/drift.dart';
 
+import '../../core/mes.dart';
 import '../../domain/clientes.dart';
 import '../db/database.dart';
+import 'vencimientos_repository.dart';
 
 /// Criterios de la lista de clientes.
 class FiltroClientes {
@@ -33,6 +35,7 @@ class DatosCliente {
     required this.diaCorte,
     required this.tipoContratacion,
     required this.fechaAlta,
+    required this.primerMesCobro,
     this.notas,
   });
 
@@ -46,6 +49,9 @@ class DatosCliente {
   final int diaCorte;
   final TipoContratacion tipoContratacion;
   final DateTime fechaAlta;
+
+  /// Primer mes que se le cobra (mes del alta, el siguiente u otro).
+  final Mes primerMesCobro;
   final String? notas;
 }
 
@@ -87,9 +93,14 @@ class DatosEquipo {
 
 /// Acceso a datos de clientes, sus instalaciones, equipos e historial.
 class ClientesRepository {
-  ClientesRepository(this._db);
+  /// [ahora] permite fijar la fecha en las pruebas.
+  ClientesRepository(this._db, {DateTime Function()? ahora})
+      : _ahora = ahora ?? DateTime.now,
+        _vencimientos = VencimientosRepository(_db);
 
   final AppDatabase _db;
+  final DateTime Function() _ahora;
+  final VencimientosRepository _vencimientos;
 
   // ----- Planes -----
 
@@ -130,7 +141,8 @@ class ClientesRepository {
         .getSingleOrNull();
   }
 
-  /// Da de alta un cliente (estado activo) y lo anota en el historial.
+  /// Da de alta un cliente (estado activo), lo anota en el historial y genera
+  /// los meses que ya le correspondan.
   Future<int> crearCliente(DatosCliente d) {
     return _db.transaction(() async {
       final id = await _db.into(_db.clientes).insert(ClientesCompanion.insert(
@@ -144,21 +156,24 @@ class ClientesRepository {
             diaCorte: d.diaCorte,
             tipoContratacion: d.tipoContratacion,
             fechaAlta: d.fechaAlta,
+            primerMesCobro: Value(d.primerMesCobro.toString()),
             notas: Value(d.notas),
           ));
       await _db.into(_db.historialEstados).insert(HistorialEstadosCompanion.insert(
             clienteId: id,
             estadoNuevo: EstadoCliente.activo,
             motivo: const Value('Alta de cliente'),
-            fecha: Value(DateTime.now()),
+            fecha: Value(_ahora()),
           ));
+      await _vencimientos.generarParaCliente(id, _ahora());
       return id;
     });
   }
 
-  /// Actualiza los datos del cliente. No toca el estado ni los meses ya generados
-  /// (si cambia el precio, solo aplica a los meses que se generen después).
-  Future<void> actualizarCliente(int id, DatosCliente d) async {
+  /// Actualiza los datos del cliente. No toca el estado ni el monto de los meses ya
+  /// generados (si cambia el precio, solo aplica a los meses que se generen después).
+  /// Si el primer mes de cobro se mueve, ajusta los meses sin pagos.
+  Future<void> actualizarCliente(int id, DatosCliente d) => _db.transaction(() async {
     await (_db.update(_db.clientes)..where((c) => c.id.equals(id))).write(
       ClientesCompanion(
         nombre: Value(d.nombre),
@@ -171,10 +186,13 @@ class ClientesRepository {
         diaCorte: Value(d.diaCorte),
         tipoContratacion: Value(d.tipoContratacion),
         fechaAlta: Value(d.fechaAlta),
+        primerMesCobro: Value(d.primerMesCobro.toString()),
         notas: Value(d.notas),
       ),
     );
-  }
+    await _vencimientos.ajustarAlPrimerMes(id);
+    await _vencimientos.generarParaCliente(id, _ahora());
+  });
 
   /// Cambia el estado (activo/suspendido/cancelado) y lo registra en el historial.
   /// Los clientes nunca se borran.
@@ -192,8 +210,10 @@ class ClientesRepository {
             estadoAnterior: Value(cliente.estado),
             estadoNuevo: nuevo,
             motivo: Value(motivo),
-            fecha: Value(DateTime.now()),
+            fecha: Value(_ahora()),
           ));
+      // Al reactivar se generan los meses desde ese momento (no los de la suspensión).
+      await _vencimientos.generarParaCliente(clienteId, _ahora());
     });
   }
 

@@ -4,14 +4,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'data/db/database.dart';
+import 'data/repositories/vencimientos_repository.dart';
 import 'providers/providers.dart';
 import 'routes/app_router.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final db = AppDatabase();
+  try {
+    // Genera los meses de cobro que ya correspondan a cada cliente.
+    await VencimientosRepository(db).generarTodos(DateTime.now());
+  } catch (e, st) {
+    debugPrint('No se pudieron generar los vencimientos: $e\n$st');
+  }
   runApp(
     ProviderScope(
-      overrides: [databaseProvider.overrideWithValue(AppDatabase())],
+      overrides: [databaseProvider.overrideWithValue(db)],
       child: const NetMaxApp(),
     ),
   );

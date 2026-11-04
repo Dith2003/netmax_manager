@@ -21,6 +21,8 @@ class Mes implements Comparable<Mes> {
 
   Mes siguiente() => mes == 12 ? Mes(anio + 1, 1) : Mes(anio, mes + 1);
 
+  Mes anterior() => mes == 1 ? Mes(anio - 1, 12) : Mes(anio, mes - 1);
+
   /// Fecha en que vence este mes para un cliente con [diaCorte] (1-28).
   DateTime fechaVencimiento(int diaCorte) {
     if (diaCorte < 1 || diaCorte > 28) {

@@ -8,6 +8,7 @@ import '../../core/fechas.dart';
 import '../../data/db/database.dart';
 import '../../domain/clientes.dart';
 import '../../domain/cobranza.dart';
+import '../../domain/vencimientos.dart';
 import '../../providers/providers.dart';
 import '../../widgets/comunes.dart';
 import 'dialogos.dart';
@@ -135,6 +136,13 @@ class _Ficha extends ConsumerWidget {
                   _Dato('Zona', cliente.zona),
                   _Dato('Referencia', cliente.referencia),
                   _Dato('Alta', formatoFechaCorta(cliente.fechaAlta)),
+                  _Dato(
+                    'Cobro desde',
+                    primerMesDeCobro(
+                      primerMesCobro: cliente.primerMesCobro,
+                      fechaAlta: cliente.fechaAlta,
+                    ).nombre,
+                  ),
                   _Dato('Notas', cliente.notas),
                 ],
               ),
@@ -258,6 +266,8 @@ class _SeccionPagos extends ConsumerWidget {
               ? 'Debe ${formatoDinero(adeudo.total)} '
                   '(${adeudo.meses} ${adeudo.meses == 1 ? 'mes vencido' : 'meses vencidos'})'
               : 'Al corriente'),
+          trailing: const Text('Estado de cuenta ›'),
+          onTap: () => context.push('/clientes/${cliente.id}/estado-cuenta'),
         );
       },
     );

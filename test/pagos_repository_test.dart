@@ -14,8 +14,11 @@ void main() {
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
-    clientes = ClientesRepository(db);
-    pagos = PagosRepository(db);
+    // Fecha fija anterior al primer mes de cobro: no se generan meses automáticos,
+    // así cada prueba controla qué meses existen.
+    DateTime ahora() => DateTime(2026, 8, 15);
+    clientes = ClientesRepository(db, ahora: ahora);
+    pagos = PagosRepository(db, ahora: ahora);
     final planId = (await clientes.vigilarPlanes().first).first.id;
     clienteId = await clientes.crearCliente(DatosCliente(
       nombre: 'Ana López',
@@ -24,6 +27,7 @@ void main() {
       diaCorte: 5,
       tipoContratacion: TipoContratacion.equipoPropio,
       fechaAlta: DateTime(2026, 9, 1),
+      primerMesCobro: Mes(2026, 9),
     ));
   });
 
@@ -94,6 +98,7 @@ void main() {
         diaCorte: c.diaCorte,
         tipoContratacion: c.tipoContratacion,
         fechaAlta: c.fechaAlta,
+        primerMesCobro: Mes(2026, 9),
       ),
     );
     await pagos.registrarPago(clienteId, pago(45000)); // 150 de sep + 300 de oct

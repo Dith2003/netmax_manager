@@ -25,7 +25,21 @@ jobs:
         id: codigo
         run: dart run build_runner build --delete-conflicting-outputs
 
+      - name: Verificar que el código generado esté al día
+        # Si database.g.dart cambió, lo imprime comprimido en base64 para poder copiarlo.
+        if: ${{ !cancelled() && steps.codigo.outcome == 'success' }}
+        run: |
+          if ! git diff --quiet -- lib/data/db/database.g.dart; then
+            echo "database.g.dart está desactualizado; ejecuta build_runner y súbelo."
+            echo "INICIO_BASE64"
+            gzip -9 -c lib/data/db/database.g.dart | base64 -w0
+            echo
+            echo "FIN_BASE64"
+            exit 1
+          fi
+
       - name: Análisis estático
+        if: ${{ !cancelled() && steps.codigo.outcome == 'success' }}
         run: flutter analyze
 
       - name: Pruebas

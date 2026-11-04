@@ -2,7 +2,9 @@ import 'package:drift/drift.dart';
 
 import '../../core/mes.dart';
 import '../../domain/cobranza.dart';
+import '../../domain/vencimientos.dart';
 import '../db/database.dart';
+import 'vencimientos_repository.dart';
 
 /// Datos que captura la pantalla "Registrar pago".
 class DatosPago {
@@ -46,9 +48,14 @@ class PagoNoPermitido implements Exception {
 /// El reparto de cada pago lo decide [aplicarPago] (domain/cobranza.dart):
 /// primero el mes pendiente más antiguo y, si sobra, meses adelantados.
 class PagosRepository {
-  PagosRepository(this._db);
+  /// [ahora] permite fijar la fecha en las pruebas.
+  PagosRepository(this._db, {DateTime Function()? ahora})
+      : _ahora = ahora ?? DateTime.now,
+        _vencimientos = VencimientosRepository(_db);
 
   final AppDatabase _db;
+  final DateTime Function() _ahora;
+  final VencimientosRepository _vencimientos;
 
   /// Máximo de meses que un solo pago puede adelantar.
   static const maxMesesAdelantados = 24;
@@ -101,7 +108,8 @@ class PagosRepository {
       periodos: periodos,
       precioMensual: cliente.precioMensual,
       diaCorte: cliente.diaCorte,
-      primerMes: Mes.deFecha(cliente.fechaAlta),
+      primerMes: primerMesDeCobro(
+          primerMesCobro: cliente.primerMesCobro, fechaAlta: cliente.fechaAlta),
       maxPeriodosNuevos: maxMesesAdelantados,
     );
   }
@@ -123,6 +131,8 @@ class PagosRepository {
         throw const PagoNoPermitido('El monto debe ser mayor a \$0.');
       }
 
+      // Asegura que existan los meses que ya le corresponden antes de repartir.
+      await _vencimientos.generarParaCliente(clienteId, _ahora());
       final periodos = await obtenerPeriodos(clienteId);
       final resultado = previsualizar(cliente: cliente, periodos: periodos, monto: datos.monto);
       if (resultado.sobrante > 0) {
