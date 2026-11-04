@@ -8,6 +8,8 @@ import '../screens/clientes/clientes_screen.dart';
 import '../screens/clientes/estado_cuenta_screen.dart';
 import '../screens/inicio/inicio_screen.dart';
 import '../screens/pagos/registrar_pago_screen.dart';
+import '../screens/reportes/reporte_screen.dart';
+import '../screens/reportes/reportes_screen.dart';
 
 /// Rutas de la app. La pantalla inicial es el resumen (Inicio).
 GoRouter crearRouter() {
@@ -56,6 +58,18 @@ GoRouter crearRouter() {
             path: '/adeudos',
             builder: (_, _) => const AdeudosScreen(),
           ),
+          GoRoute(
+            path: '/reportes',
+            builder: (_, _) => const ReportesScreen(),
+            routes: [
+              GoRoute(
+                path: ':tipo',
+                builder: (_, state) => ReporteScreen(
+                  tipo: TipoReporte.values.byName(state.pathParameters['tipo']!),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     ],
@@ -69,15 +83,12 @@ class _ConNavegacion extends StatelessWidget {
   final String ubicacion;
   final Widget child;
 
-  static const _secciones = ['/inicio', '/clientes', '/adeudos'];
+  static const _secciones = ['/inicio', '/clientes', '/adeudos', '/reportes'];
 
   @override
   Widget build(BuildContext context) {
-    final indice = ubicacion.startsWith('/adeudos')
-        ? 2
-        : ubicacion.startsWith('/clientes')
-            ? 1
-            : 0;
+    final encontrado = _secciones.indexWhere((s) => ubicacion.startsWith(s));
+    final indice = encontrado < 0 ? 0 : encontrado;
     return Scaffold(
       body: child,
       bottomNavigationBar: NavigationBar(
@@ -87,6 +98,7 @@ class _ConNavegacion extends StatelessWidget {
           NavigationDestination(icon: Icon(Icons.home), label: 'Inicio'),
           NavigationDestination(icon: Icon(Icons.people), label: 'Clientes'),
           NavigationDestination(icon: Icon(Icons.money_off), label: 'Adeudos'),
+          NavigationDestination(icon: Icon(Icons.description), label: 'Reportes'),
         ],
       ),
     );
