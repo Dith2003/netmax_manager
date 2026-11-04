@@ -11,7 +11,6 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart' show debugDisableShadows;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -256,7 +255,6 @@ Future<void> _capturar(
 }) async {
   // En las pruebas las sombras se dibujan como un borde negro; aquí se quieren reales.
   debugDisableShadows = false;
-  addTearDown(() => debugDisableShadows = true);
   tester.view.physicalSize = tamano * 2;
   tester.view.devicePixelRatio = 2;
   addTearDown(tester.view.reset);
@@ -286,6 +284,7 @@ Future<void> _capturar(
   });
   await tester.pumpAndSettle();
   await expectLater(find.byType(NetMaxApp), matchesGoldenFile('capturas/$nombre.png'));
+  debugDisableShadows = true; // se restablece antes de que termine la prueba
 }
 
 void main() {
