@@ -12,12 +12,17 @@ import '../../domain/clientes.dart';
 import '../../domain/vencimientos.dart';
 import '../../providers/providers.dart';
 import '../../widgets/comunes.dart';
+import 'modales.dart';
 
 /// Alta (clienteId == null) o edición de un cliente.
 class ClienteFormScreen extends ConsumerStatefulWidget {
-  const ClienteFormScreen({super.key, this.clienteId});
+  const ClienteFormScreen({super.key, this.clienteId, this.enModal = false});
 
   final int? clienteId;
+
+  /// Si se muestra dentro de un modal (ver modales.dart): al guardar o cancelar
+  /// se cierra el modal y devuelve el id del cliente.
+  final bool enModal;
 
   bool get esEdicion => clienteId != null;
 
@@ -147,15 +152,23 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
     final repo = ref.read(clientesRepositoryProvider);
 
     try {
+      final int id;
       if (widget.esEdicion) {
-        await repo.actualizarCliente(widget.clienteId!, datos);
-        if (!mounted) return;
-        mostrarMensaje(context, 'Cambios guardados');
-        context.pop();
+        id = widget.clienteId!;
+        await repo.actualizarCliente(id, datos);
       } else {
-        final id = await repo.crearCliente(datos);
-        if (!mounted) return;
-        mostrarMensaje(context, 'Cliente registrado');
+        id = await repo.crearCliente(datos);
+      }
+      if (!mounted) return;
+      final mensaje = widget.esEdicion ? 'Cambios guardados' : 'Cliente registrado';
+      if (widget.enModal) {
+        mensajeFueraDelModal(context, mensaje);
+        cerrarModal(context, id);
+      } else if (widget.esEdicion) {
+        mostrarMensaje(context, mensaje);
+        Navigator.of(context).pop();
+      } else {
+        mostrarMensaje(context, mensaje);
         context.pushReplacement('/clientes/$id');
       }
     } catch (e) {
@@ -171,6 +184,14 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: !widget.enModal,
+        leading: widget.enModal
+            ? IconButton(
+                tooltip: 'Cerrar sin guardar',
+                icon: const Icon(Icons.close),
+                onPressed: () => cerrarModal<int>(context),
+              )
+            : null,
         title: Text(widget.esEdicion ? 'Editar cliente' : 'Nuevo cliente'),
       ),
       body: _cargando

@@ -58,7 +58,11 @@ void main() {
     expect(find.text('2 clientes con adeudo'), findsOneWidget);
     expect(find.text('12'), findsOneWidget);
     expect(find.text('1 suspendido · 0 cancelados'), findsOneWidget);
-    expect(find.text(r'$750.00 de $1,000.00 · 75%'), findsOneWidget);
+    expect(find.text('75%'), findsOneWidget);
+    expect(find.text(r'$750.00 de $1,000.00'), findsOneWidget);
+    // Acciones rápidas.
+    expect(find.text('Registrar pago'), findsOneWidget);
+    expect(find.text('Nuevo cliente'), findsOneWidget);
     expect(find.text('Beto Ruiz'), findsOneWidget);
     expect(find.text(r'$150.00'), findsOneWidget);
     expect(find.text('Ana López'), findsOneWidget);

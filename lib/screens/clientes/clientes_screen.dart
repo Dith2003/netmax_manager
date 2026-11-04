@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/dinero.dart';
 import '../../data/db/database.dart';
 import '../../data/repositories/clientes_repository.dart';
 import '../../providers/providers.dart';
 import '../../widgets/comunes.dart';
+import 'modales.dart';
 
 /// Lista de clientes con búsqueda y filtro por estado.
 class ClientesScreen extends ConsumerStatefulWidget {
@@ -37,7 +37,7 @@ class _ClientesScreenState extends ConsumerState<ClientesScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Clientes')),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/clientes/nuevo'),
+        onPressed: () => nuevoCliente(context),
         icon: const Icon(Icons.person_add),
         label: const Text('Nuevo cliente'),
       ),
@@ -157,7 +157,7 @@ class _ClienteTile extends StatelessWidget {
           EstadoChip(cliente.estado),
         ],
       ),
-      onTap: () => context.push('/clientes/${cliente.id}'),
+      onTap: () => abrirFichaCliente(context, cliente.id),
     );
   }
 }

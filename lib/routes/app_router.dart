@@ -8,6 +8,7 @@ import '../screens/clientes/clientes_screen.dart';
 import '../screens/clientes/estado_cuenta_screen.dart';
 import '../screens/inicio/inicio_screen.dart';
 import '../screens/pagos/registrar_pago_screen.dart';
+import '../screens/reportes/comprobantes_screen.dart';
 import '../screens/reportes/reporte_screen.dart';
 import '../screens/reportes/reportes_screen.dart';
 import '../screens/respaldos/respaldos_screen.dart';
@@ -67,6 +68,10 @@ GoRouter crearRouter() {
             path: '/reportes',
             builder: (_, _) => const ReportesScreen(),
             routes: [
+              GoRoute(
+                path: 'comprobantes',
+                builder: (_, _) => const ComprobantesScreen(),
+              ),
               GoRoute(
                 path: ':tipo',
                 builder: (_, state) => ReporteScreen(

@@ -89,4 +89,42 @@ void main() {
     expect(r.avanceMes, 0);
     expect(r.activos, 0);
   });
+
+  group('evolución', () {
+    test('últimos meses termina en el mes indicado', () {
+      final m = ultimosMeses(Mes(2026, 2), 4);
+      expect(m.map((x) => x.toString()), ['2025-11', '2025-12', '2026-01', '2026-02']);
+    });
+
+    test('cobranza por mes con meses sin pagos en cero', () {
+      final serie = serieCobranza([
+        pago(DateTime(2026, 9, 3), 25000),
+        pago(DateTime(2026, 9, 20), 30000),
+        pago(DateTime(2026, 11, 1), 25000),
+        pago(DateTime(2025, 1, 1), 99999), // fuera del periodo
+      ], nov, meses: 3);
+      expect(serie.map((c) => c.total), [55000, 0, 25000]);
+      expect(serie.map((c) => c.pagos), [2, 0, 1]);
+    });
+
+    test('actividad: altas por fecha de alta y cambios del historial', () {
+      final serie = serieActividad(
+        altas: [DateTime(2026, 10, 3), DateTime(2026, 11, 1), DateTime(2026, 11, 2)],
+        cambios: [
+          (fecha: DateTime(2026, 11, 1), anterior: null, nuevo: EstadoCliente.activo), // alta
+          (fecha: DateTime(2026, 10, 5), anterior: EstadoCliente.activo, nuevo: EstadoCliente.suspendido),
+          (fecha: DateTime(2026, 11, 5), anterior: EstadoCliente.suspendido, nuevo: EstadoCliente.activo),
+          (fecha: DateTime(2026, 11, 9), anterior: EstadoCliente.activo, nuevo: EstadoCliente.cancelado),
+        ],
+        hasta: nov,
+        meses: 2,
+      );
+      expect(serie.first.mes, Mes(2026, 10));
+      expect(serie.first.altas, 1);
+      expect(serie.first.suspensiones, 1);
+      expect(serie.last.altas, 2);
+      expect(serie.last.reactivaciones, 1);
+      expect(serie.last.cancelaciones, 1);
+    });
+  });
 }
