@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/dinero.dart';
 import '../../core/fechas.dart';
+import '../../data/respaldos/respaldo_service.dart';
 import '../../domain/dashboard.dart';
 import '../../providers/providers.dart';
 import '../../widgets/comunes.dart';
@@ -16,21 +17,39 @@ class InicioScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final resumen = ref.watch(resumenProvider);
 
+    final ultimoRespaldo = ref.watch(ultimoRespaldoProvider);
+    // Recordatorio solo cuando ya se sabe la fecha (no mientras carga o si falla).
+    final recordarRespaldo = ultimoRespaldo.when(
+      data: (fecha) => necesitaRespaldo(fecha, DateTime.now()),
+      loading: () => false,
+      error: (_, _) => false,
+    );
+
     return Scaffold(
-      appBar: AppBar(title: const Text('NetMAX')),
+      appBar: AppBar(
+        title: const Text('NetMAX'),
+        actions: [
+          IconButton(
+            tooltip: 'Respaldos',
+            icon: const Icon(Icons.backup),
+            onPressed: () => context.push('/respaldos'),
+          ),
+        ],
+      ),
       body: resumen.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => ErrorVista(e),
-        data: (r) => _Contenido(r),
+        data: (r) => _Contenido(r, recordarRespaldo: recordarRespaldo),
       ),
     );
   }
 }
 
 class _Contenido extends StatelessWidget {
-  const _Contenido(this.r);
+  const _Contenido(this.r, {this.recordarRespaldo = false});
 
   final ResumenDashboard r;
+  final bool recordarRespaldo;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +63,20 @@ class _Contenido extends StatelessWidget {
       return ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          if (recordarRespaldo) ...[
+            Card(
+              margin: EdgeInsets.zero,
+              color: Theme.of(context).colorScheme.tertiaryContainer,
+              child: ListTile(
+                leading: const Icon(Icons.backup),
+                title: const Text('Haz un respaldo de tu información'),
+                subtitle: const Text('No hay un respaldo de los últimos 7 días.'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/respaldos'),
+              ),
+            ),
+            const SizedBox(height: espacio),
+          ],
           Wrap(
             spacing: espacio,
             runSpacing: espacio,

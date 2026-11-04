@@ -2,8 +2,11 @@
 // (p. ej. diaCorte.isBetweenValues), es el patrón documentado por drift.
 // ignore_for_file: recursive_getters
 
+import 'dart:io';
+
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'enums.dart';
 
@@ -204,10 +207,21 @@ class Configuraciones extends Table {
   Configuraciones,
 ])
 class AppDatabase extends _$AppDatabase {
-  /// Sin parámetros abre el archivo 'netmax' en la carpeta de datos de la app.
+  /// Sin parámetros abre el archivo de la app ([rutaArchivo]).
   /// En pruebas se puede pasar una base en memoria.
   AppDatabase([QueryExecutor? executor])
-      : super(executor ?? driftDatabase(name: 'netmax'));
+      : super(executor ??
+            driftDatabase(
+              name: 'netmax',
+              native: const DriftNativeOptions(databasePath: rutaArchivo),
+            ));
+
+  /// Ruta del archivo de la base de datos: `netmax.sqlite` en la carpeta de
+  /// documentos de la app (la misma que usa drift_flutter por defecto).
+  static Future<String> rutaArchivo() async {
+    final carpeta = await getApplicationDocumentsDirectory();
+    return '${carpeta.path}${Platform.pathSeparator}netmax.sqlite';
+  }
 
   @override
   int get schemaVersion => 3;

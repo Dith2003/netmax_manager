@@ -7,6 +7,7 @@ import '../data/repositories/dashboard_repository.dart';
 import '../data/repositories/pagos_repository.dart';
 import '../data/repositories/reportes_repository.dart';
 import '../data/repositories/vencimientos_repository.dart';
+import '../data/respaldos/respaldo_service.dart';
 import '../domain/cobranza.dart';
 import '../domain/dashboard.dart';
 import '../reportes/pdf_reportes.dart';
@@ -99,3 +100,20 @@ final reportesRepositoryProvider = Provider<ReportesRepository>(
 
 /// Tipografía de los PDF (se carga una vez).
 final temaPdfProvider = FutureProvider<pw.ThemeData>((ref) => cargarTemaPdf());
+
+// ----- Respaldos -----
+
+final respaldoServiceProvider = Provider<RespaldoService>(
+  (ref) => RespaldoService(ref.watch(databaseProvider)),
+);
+
+/// Fecha del último respaldo (null si nunca).
+final ultimoRespaldoProvider = StreamProvider.autoDispose<DateTime?>(
+  (ref) => ref.watch(respaldoServiceProvider).vigilarUltimoRespaldo(),
+);
+
+/// Restaura un respaldo: cierra la base de datos, reemplaza el archivo y
+/// reinicia la app. Lo configura `AppRaiz` en main.dart.
+final restaurarRespaldoProvider = Provider<Future<void> Function(String rutaRespaldo)>(
+  (ref) => throw UnimplementedError('restaurarRespaldoProvider se configura en AppRaiz'),
+);

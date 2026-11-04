@@ -37,17 +37,22 @@ lib/
                    #   cargos extra, adeudos)
                    # dashboard_repository.dart (resumen de inicio; se recalcula con consulta testigo)
                    # reportes_repository.dart (pagos de un periodo, ingresos, adeudos, clientes)
+    respaldos/   # respaldo_service.dart (crear con VACUUM INTO, validar, reemplazar archivo)
   reportes/      # pdf_reportes.dart: PDFs carta con encabezado/pie (pdf); fuente Open Sans en
                  # assets/fonts (OFL) cargada con cargarTemaPdf()
   providers/     # providers.dart: databaseProvider (se inyecta en main) y StreamProviders
   screens/       # una carpeta por módulo: clientes/ (lista, formulario, ficha, diálogos),
                  # estado_cuenta_screen.dart; pagos/ (registrar pago); adeudos/ (lista de adeudos);
                  # inicio/ (dashboard: indicadores, medidor del mes, vencimientos, pagos recientes);
-                 # reportes/ (lista de reportes y vista previa PdfPreview: imprimir/compartir)
+                 # reportes/ (lista de reportes y vista previa PdfPreview: imprimir/compartir);
+                 # respaldos/ (crear: Windows guardar como / Android compartir; restaurar)
   widgets/       # comunes.dart (EstadoChip, ErrorVista, SeccionTitulo, mostrarMensaje)
   routes/        # app_router.dart (go_router, ShellRoute con barra Inicio/Clientes/Adeudos/Reportes):
                  # /inicio (arranque), /clientes, /clientes/nuevo, /clientes/:id,
-                 # /clientes/:id/{editar,pago,estado-cuenta}, /adeudos, /reportes, /reportes/:tipo
+                 # /clientes/:id/{editar,pago,estado-cuenta}, /adeudos, /reportes, /reportes/:tipo,
+                 # /respaldos (desde el botón de Inicio)
+  main.dart      # AppRaiz: abre la BD y reconstruye toda la app (ProviderScope con key)
+                 # al restaurar un respaldo (restaurarRespaldoProvider)
 docs/
   schema.sql     # referencia original; la fuente de verdad es lib/data/db/database.dart
 ```
@@ -90,6 +95,13 @@ docs/
 14. **Reportes (PDF)**: ingresos por mes de un año (por fecha de pago, desglose por método),
    pagos recibidos en un mes (con lo que cubrió cada uno), clientes con adeudo y lista de
    clientes. Solo cuentan pagos vigentes. Las fechas se filtran en Dart (se guardan con zona).
+15. **Respaldos**: copia completa del archivo SQLite (`.db`). Archivo de la app:
+   `getApplicationDocumentsDirectory()/netmax.sqlite` (`AppDatabase.rutaArchivo`; no cambiarla o se
+   pierde el acceso a los datos existentes). Restaurar: validar (integridad, tablas, `user_version`
+   ≤ `schemaVersion`), confirmar con resumen, copia de seguridad `netmax.sqlite.antes_de_restaurar`,
+   cerrar BD, reemplazar (borrando -wal/-shm/-journal) y reabrir (las migraciones actualizan
+   respaldos viejos). La fecha del último respaldo se guarda en `configuraciones.ultimo_respaldo`;
+   Inicio recuerda respaldar si pasan más de 7 días.
 
 ## Convenciones
 - Código y nombres de tablas en español sin acentos (`clientes`, `fecha_pago`).
@@ -132,7 +144,9 @@ docs/
 - [x] Sprint 4b: Cargos extra (equipo no devuelto, reconexión, etc.)
 - [x] Sprint 5: Dashboard (pantalla de inicio)
 - [x] Sprint 6: Reportes (PDF: ingresos, pagos, adeudos, clientes)
-- [ ] Sprint 7: Respaldos (exportar/importar archivo .db)
+- [x] Sprint 7: Respaldos (crear, compartir/guardar, restaurar, recordatorio)
+
+**Versión 1.0 completa.**
 
 ## Futuro (no hacer todavía)
 Sincronización entre dispositivos, recordatorios por WhatsApp, mapa/GPS de clientes,

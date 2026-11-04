@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,28 +7,96 @@ import 'package:go_router/go_router.dart';
 
 import 'data/db/database.dart';
 import 'data/repositories/vencimientos_repository.dart';
+import 'data/respaldos/respaldo_service.dart';
 import 'providers/providers.dart';
 import 'routes/app_router.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  runApp(AppRaiz(db: await abrirBaseDeDatos()));
+}
+
+/// Abre la base de datos y genera los meses de cobro que ya correspondan.
+Future<AppDatabase> abrirBaseDeDatos() async {
   final db = AppDatabase();
   try {
-    // Genera los meses de cobro que ya correspondan a cada cliente.
     await VencimientosRepository(db).generarTodos(DateTime.now());
   } catch (e, st) {
     debugPrint('No se pudieron generar los vencimientos: $e\n$st');
   }
-  runApp(
-    ProviderScope(
-      overrides: [databaseProvider.overrideWithValue(db)],
-      child: const NetMaxApp(),
-    ),
-  );
+  return db;
+}
+
+/// Raíz de la app: tiene la base de datos y permite reiniciar todo al
+/// restaurar un respaldo (se reemplaza la base de datos y se reconstruye la app).
+class AppRaiz extends StatefulWidget {
+  const AppRaiz({super.key, required this.db});
+
+  final AppDatabase db;
+
+  @override
+  State<AppRaiz> createState() => _AppRaizState();
+}
+
+class _AppRaizState extends State<AppRaiz> {
+  late AppDatabase _db = widget.db;
+  int _generacion = 0;
+  final _mensajero = GlobalKey<ScaffoldMessengerState>();
+
+  Future<void> _restaurar(String rutaRespaldo) async {
+    final destino = await AppDatabase.rutaArchivo();
+
+    // Copia de seguridad del estado actual, por si hay que regresar.
+    final seguridad = '$destino.antes_de_restaurar';
+    await RespaldoService(_db).crearRespaldo(seguridad, registrar: false);
+
+    await _db.close();
+    try {
+      await RespaldoService.reemplazarArchivo(respaldo: rutaRespaldo, destino: destino);
+    } catch (e) {
+      // Si falla el reemplazo, se vuelve a poner el archivo anterior.
+      if (await File(seguridad).exists()) {
+        await RespaldoService.reemplazarArchivo(respaldo: seguridad, destino: destino);
+      }
+      final anterior = await abrirBaseDeDatos();
+      setState(() {
+        _db = anterior;
+        _generacion++;
+      });
+      rethrow;
+    }
+
+    final nueva = await abrirBaseDeDatos();
+    setState(() {
+      _db = nueva;
+      _generacion++;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _mensajero.currentState?.showSnackBar(
+        const SnackBar(content: Text('Respaldo restaurado correctamente')),
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ProviderScope(
+      // Al cambiar la generación se reconstruye toda la app con la base nueva.
+      key: ValueKey(_generacion),
+      overrides: [
+        databaseProvider.overrideWithValue(_db),
+        restaurarRespaldoProvider.overrideWithValue(_restaurar),
+      ],
+      child: NetMaxApp(mensajero: _mensajero),
+    );
+  }
 }
 
 class NetMaxApp extends StatefulWidget {
-  const NetMaxApp({super.key});
+  const NetMaxApp({super.key, this.mensajero});
+
+  /// Para mostrar mensajes desde fuera de las pantallas (p. ej. al restaurar).
+  final GlobalKey<ScaffoldMessengerState>? mensajero;
 
   @override
   State<NetMaxApp> createState() => _NetMaxAppState();
@@ -48,6 +118,7 @@ class _NetMaxAppState extends State<NetMaxApp> {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
       routerConfig: _router,
+      scaffoldMessengerKey: widget.mensajero,
       // Calendario, botones y textos del sistema en español.
       locale: const Locale('es', 'MX'),
       supportedLocales: const [Locale('es', 'MX'), Locale('es')],
