@@ -10,6 +10,7 @@ import '../../domain/cobranza.dart';
 import '../../domain/vencimientos.dart';
 import '../../providers/providers.dart';
 import '../../widgets/comunes.dart';
+import '../../widgets/disposicion.dart';
 import '../pagos/comprobante_screen.dart';
 import 'dialogos.dart';
 import 'estado_cuenta_screen.dart';
@@ -130,7 +131,9 @@ class _Ficha extends ConsumerWidget {
               icon: const Icon(Icons.payments),
               label: const Text('Registrar pago'),
             ),
-      body: ListView(
+      body: ContenidoCentrado(
+        anchoMaximo: 960,
+        child: ListView(
         padding: const EdgeInsets.only(bottom: 88),
         children: [
           _AvisoEquipoPrestado(cliente: cliente),
@@ -178,6 +181,7 @@ class _Ficha extends ConsumerWidget {
           _SeccionEquipos(cliente: cliente),
           _SeccionHistorial(clienteId: cliente.id),
         ],
+      ),
       ),
     );
   }

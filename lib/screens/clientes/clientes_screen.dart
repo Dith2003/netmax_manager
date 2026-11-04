@@ -6,6 +6,7 @@ import '../../data/db/database.dart';
 import '../../data/repositories/clientes_repository.dart';
 import '../../providers/providers.dart';
 import '../../widgets/comunes.dart';
+import '../../widgets/disposicion.dart';
 import 'modales.dart';
 
 /// Lista de clientes con búsqueda y filtro por estado.
@@ -34,15 +35,34 @@ class _ClientesScreenState extends ConsumerState<ClientesScreen> {
     final filtro = FiltroClientes(busqueda: _busqueda, estado: _estado);
     final clientes = ref.watch(clientesProvider(filtro));
 
+    final escritorio = esEscritorio(context);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Clientes')),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => nuevoCliente(context),
-        icon: const Icon(Icons.person_add),
-        label: const Text('Nuevo cliente'),
-      ),
-      body: Column(
+      appBar: escritorio ? null : AppBar(title: const Text('Clientes')),
+      floatingActionButton: escritorio
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () => nuevoCliente(context),
+              icon: const Icon(Icons.person_add),
+              label: const Text('Nuevo cliente'),
+            ),
+      body: ContenidoCentrado(
+        anchoMaximo: 1240,
+        child: Column(
         children: [
+          if (escritorio)
+            EncabezadoSeccion(
+              titulo: 'Clientes',
+              descripcion: 'Busca, registra y consulta la información de tus clientes',
+              icono: Icons.people,
+              acciones: [
+                FilledButton.icon(
+                  onPressed: () => nuevoCliente(context),
+                  icon: const Icon(Icons.person_add),
+                  label: const Text('Nuevo cliente'),
+                ),
+              ],
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: TextField(
@@ -112,6 +132,7 @@ class _ClientesScreenState extends ConsumerState<ClientesScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

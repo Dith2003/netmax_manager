@@ -12,6 +12,7 @@ import '../../domain/clientes.dart';
 import '../../domain/vencimientos.dart';
 import '../../providers/providers.dart';
 import '../../widgets/comunes.dart';
+import '../../widgets/disposicion.dart';
 import 'modales.dart';
 
 /// Alta (clienteId == null) o edición de un cliente.
@@ -201,6 +202,49 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
               error: (e, _) => ErrorVista(e),
               data: _formulario,
             ),
+      // Botones siempre visibles abajo, aunque el formulario sea largo.
+      bottomNavigationBar: _cargando ? null : _barraAcciones(context),
+    );
+  }
+
+  Widget _barraAcciones(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        border: Border(top: BorderSide(color: scheme.outlineVariant)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: ContenidoCentrado(
+          anchoMaximo: 760,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: _guardando
+                      ? null
+                      : () => widget.enModal
+                          ? cerrarModal<int>(context)
+                          : Navigator.of(context).maybePop(),
+                  child: const Text('Cancelar'),
+                ),
+                const SizedBox(width: 12),
+                FilledButton.icon(
+                  onPressed: _guardando ? null : _guardar,
+                  icon: _guardando
+                      ? const SizedBox.square(
+                          dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.save),
+                  label: Text(widget.esEdicion ? 'Guardar cambios' : 'Registrar cliente'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -219,9 +263,10 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
       // La clave fuerza a reconstruir el campo cuando cambia la fecha de alta.
       key: ValueKey('primer-mes-$alta-$_primerMes'),
       initialValue: _primerMes,
+      isExpanded: true,
       decoration: const InputDecoration(
         labelText: 'Primer mes de cobro *',
-        helperText: 'Desde este mes se generan los cobros mensuales',
+        helperText: 'Desde aquí se generan los cobros',
       ),
       items: [
         for (final m in opciones) DropdownMenuItem(value: m, child: Text(etiqueta(m))),
@@ -246,155 +291,141 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
       }
     }
 
-    const espacio = SizedBox(height: 16);
+    final campoNombre = TextFormField(
+      controller: _nombre,
+      decoration: const InputDecoration(labelText: 'Nombre completo *'),
+      textCapitalization: TextCapitalization.words,
+      validator: validarNombre,
+    );
+    final campoTelefono = TextFormField(
+      controller: _telefono,
+      decoration: const InputDecoration(labelText: 'Teléfono (10 dígitos)'),
+      keyboardType: TextInputType.phone,
+      validator: validarTelefono,
+    );
+    final campoZona = TextFormField(
+      controller: _zona,
+      decoration: const InputDecoration(labelText: 'Zona / comunidad'),
+      textCapitalization: TextCapitalization.words,
+    );
+    final campoDireccion = TextFormField(
+      controller: _direccion,
+      decoration: const InputDecoration(labelText: 'Dirección'),
+    );
+    final campoReferencia = TextFormField(
+      controller: _referencia,
+      decoration: const InputDecoration(labelText: 'Referencia (cómo llegar)'),
+    );
+    final campoPlan = DropdownButtonFormField<int>(
+      initialValue: _planId,
+      isExpanded: true,
+      decoration: const InputDecoration(labelText: 'Plan *'),
+      items: [
+        for (final p in planes)
+          DropdownMenuItem(
+            value: p.id,
+            child: Text('${p.nombre} · ${formatoDinero(p.precioBase)}'),
+          ),
+      ],
+      onChanged: (id) {
+        if (id == null) return;
+        _seleccionarPlan(planes.firstWhere((p) => p.id == id));
+      },
+    );
+    final campoPrecio = TextFormField(
+      controller: _precio,
+      decoration: InputDecoration(
+        labelText: 'Precio mensual *',
+        prefixText: '\$ ',
+        helperText: widget.esEdicion
+            ? 'Solo aplica a los meses que se generen después'
+            : 'Puede ser distinto al del plan',
+      ),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      validator: validarMontoObligatorio,
+      onChanged: (_) => _precioEditado = true,
+    );
+    final campoDiaCorte = DropdownButtonFormField<int>(
+      initialValue: _diaCorte,
+      isExpanded: true,
+      decoration: const InputDecoration(labelText: 'Día de corte *'),
+      items: [
+        for (var d = 1; d <= 28; d++)
+          DropdownMenuItem(value: d, child: Text('Día $d de cada mes')),
+      ],
+      onChanged: (d) {
+        if (d != null) setState(() => _diaCorte = d);
+      },
+    );
+    final campoTipo = DropdownButtonFormField<TipoContratacion>(
+      initialValue: _tipo,
+      isExpanded: true,
+      decoration: const InputDecoration(labelText: 'Tipo de contratación *'),
+      items: [
+        for (final t in TipoContratacion.values)
+          DropdownMenuItem(value: t, child: Text(t.etiqueta)),
+      ],
+      onChanged: (t) {
+        if (t != null) setState(() => _tipo = t);
+      },
+    );
+    final campoFechaAlta = InkWell(
+      onTap: _elegirFechaAlta,
+      borderRadius: BorderRadius.circular(12),
+      child: InputDecorator(
+        decoration: const InputDecoration(
+          labelText: 'Fecha de alta',
+          suffixIcon: Icon(Icons.calendar_today),
+        ),
+        child: Text(formatoFecha(_fechaAlta)),
+      ),
+    );
 
     return Form(
       key: _formKey,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
-          Text('Datos de contacto', style: Theme.of(context).textTheme.titleMedium),
-          espacio,
-          TextFormField(
-            controller: _nombre,
-            decoration: const InputDecoration(
-              labelText: 'Nombre completo *',
-            ),
-            textCapitalization: TextCapitalization.words,
-            validator: validarNombre,
-          ),
-          espacio,
-          TextFormField(
-            controller: _telefono,
-            decoration: const InputDecoration(
-              labelText: 'Teléfono (10 dígitos)',
-            ),
-            keyboardType: TextInputType.phone,
-            validator: validarTelefono,
-          ),
-          espacio,
-          TextFormField(
-            controller: _direccion,
-            decoration: const InputDecoration(
-              labelText: 'Dirección',
-            ),
-          ),
-          espacio,
-          TextFormField(
-            controller: _zona,
-            decoration: const InputDecoration(
-              labelText: 'Zona / comunidad',
-            ),
-            textCapitalization: TextCapitalization.words,
-          ),
-          espacio,
-          TextFormField(
-            controller: _referencia,
-            decoration: const InputDecoration(
-              labelText: 'Referencia (cómo llegar)',
-            ),
-            maxLines: 2,
-          ),
-          const SizedBox(height: 24),
-          Text('Servicio', style: Theme.of(context).textTheme.titleMedium),
-          espacio,
-          DropdownButtonFormField<int>(
-            initialValue: _planId,
-            decoration: const InputDecoration(
-              labelText: 'Plan *',
-            ),
-            items: [
-              for (final p in planes)
-                DropdownMenuItem(
-                  value: p.id,
-                  child: Text('${p.nombre} · ${formatoDinero(p.precioBase)}'),
+          ContenidoCentrado(
+            anchoMaximo: 760,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SeccionFormulario(
+                  titulo: 'Datos de contacto',
+                  icono: Icons.person_outline,
+                  children: [
+                    campoNombre,
+                    FilaCampos(izquierda: campoTelefono, derecha: campoZona),
+                    campoDireccion,
+                    campoReferencia,
+                  ],
                 ),
-            ],
-            onChanged: (id) {
-              if (id == null) return;
-              _seleccionarPlan(planes.firstWhere((p) => p.id == id));
-            },
-          ),
-          espacio,
-          TextFormField(
-            controller: _precio,
-            decoration: const InputDecoration(
-              labelText: 'Precio mensual *',
-              prefixText: '\$ ',
-              helperText: 'Puede ser distinto al del plan (p. ej. zonas alejadas)',
-            ),
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            validator: validarMontoObligatorio,
-            onChanged: (_) => _precioEditado = true,
-          ),
-          if (widget.esEdicion)
-            const Padding(
-              padding: EdgeInsets.only(top: 4, left: 12),
-              child: Text(
-                'Si cambias el precio, solo aplica a los meses que se generen después.',
-                style: TextStyle(fontSize: 12),
-              ),
-            ),
-          espacio,
-          DropdownButtonFormField<int>(
-            initialValue: _diaCorte,
-            decoration: const InputDecoration(
-              labelText: 'Día de corte (vencimiento) *',
-            ),
-            items: [
-              for (var d = 1; d <= 28; d++)
-                DropdownMenuItem(value: d, child: Text('Día $d de cada mes')),
-            ],
-            onChanged: (d) {
-              if (d != null) setState(() => _diaCorte = d);
-            },
-          ),
-          espacio,
-          DropdownButtonFormField<TipoContratacion>(
-            initialValue: _tipo,
-            isExpanded: true,
-            decoration: const InputDecoration(
-              labelText: 'Tipo de contratación *',
-            ),
-            items: [
-              for (final t in TipoContratacion.values)
-                DropdownMenuItem(value: t, child: Text(t.etiqueta)),
-            ],
-            onChanged: (t) {
-              if (t != null) setState(() => _tipo = t);
-            },
-          ),
-          espacio,
-          InkWell(
-            onTap: _elegirFechaAlta,
-            child: InputDecorator(
-              decoration: const InputDecoration(
-                labelText: 'Fecha de alta',
-                suffixIcon: Icon(Icons.calendar_today),
-              ),
-              child: Text(formatoFecha(_fechaAlta)),
+                SeccionFormulario(
+                  titulo: 'Servicio',
+                  icono: Icons.wifi,
+                  children: [
+                    FilaCampos(izquierda: campoPlan, derecha: campoPrecio),
+                    FilaCampos(izquierda: campoDiaCorte, derecha: campoTipo),
+                    FilaCampos(izquierda: campoFechaAlta, derecha: _campoPrimerMes()),
+                  ],
+                ),
+                SeccionFormulario(
+                  titulo: 'Notas',
+                  icono: Icons.sticky_note_2_outlined,
+                  children: [
+                    TextFormField(
+                      controller: _notas,
+                      decoration: const InputDecoration(
+                        hintText: 'Observaciones del cliente (opcional)',
+                      ),
+                      maxLines: 3,
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          espacio,
-          _campoPrimerMes(),
-          espacio,
-          TextFormField(
-            controller: _notas,
-            decoration: const InputDecoration(
-              labelText: 'Notas',
-            ),
-            maxLines: 3,
-          ),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: _guardando ? null : _guardar,
-            icon: _guardando
-                ? const SizedBox.square(
-                    dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.save),
-            label: Text(widget.esEdicion ? 'Guardar cambios' : 'Registrar cliente'),
-          ),
-          const SizedBox(height: 24),
         ],
       ),
     );

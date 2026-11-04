@@ -27,6 +27,7 @@ import 'package:netmax_manager/domain/dashboard.dart';
 import 'package:netmax_manager/domain/reportes.dart';
 import 'package:netmax_manager/main.dart';
 import 'package:netmax_manager/providers/providers.dart';
+import 'package:netmax_manager/providers/zoom.dart';
 import 'package:netmax_manager/reportes/pdf_reportes.dart';
 
 final _activo = Platform.environment['CAPTURAS'] == '1';
@@ -272,6 +273,7 @@ Future<void> _capturar(
   String ruta, {
   Size tamano = const Size(412, 915),
   Finder? tocar,
+  double zoom = 1.0,
 }) async {
   // En las pruebas las sombras se dibujan como un borde negro; aquí se quieren reales.
   debugDisableShadows = false;
@@ -280,7 +282,7 @@ Future<void> _capturar(
   addTearDown(tester.view.reset);
 
   await tester.pumpWidget(ProviderScope(
-    overrides: _datosSimulados(),
+    overrides: [..._datosSimulados(), zoomInicialProvider.overrideWithValue(zoom)],
     child: const NetMaxApp(),
   ));
   await tester.pumpAndSettle();
@@ -355,6 +357,28 @@ void main() {
       (tester) => _capturar(tester, '17_comprobantes', '/reportes/comprobantes'),
       skip: !_activo);
 
+  testWidgets('captura 18_clientes_escritorio',
+      (tester) => _capturar(tester, '18_clientes_escritorio', '/clientes', tamano: escritorio),
+      skip: !_activo);
+  testWidgets('captura 19_registrar_pago_escritorio',
+      (tester) => _capturar(tester, '19_registrar_pago_escritorio', '/clientes/1/pago',
+          tamano: escritorio),
+      skip: !_activo);
+  testWidgets('captura 20_reportes_escritorio',
+      (tester) => _capturar(tester, '20_reportes_escritorio', '/reportes', tamano: escritorio),
+      skip: !_activo);
+  testWidgets('captura 21_adeudos_escritorio',
+      (tester) => _capturar(tester, '21_adeudos_escritorio', '/adeudos', tamano: escritorio),
+      skip: !_activo);
+  testWidgets('captura 22_inicio_zoom_125',
+      (tester) => _capturar(tester, '22_inicio_zoom_125', '/inicio',
+          tamano: escritorio, zoom: 1.25),
+      skip: !_activo);
+  testWidgets('captura 23_panel_compacto',
+      (tester) => _capturar(tester, '23_panel_compacto', '/clientes',
+          tamano: const Size(1024, 760)),
+      skip: !_activo);
+
   test('PDF de ejemplo', () async {
     TestWidgetsFlutterBinding.ensureInitialized();
     final estilo = await cargarEstiloPdf();
@@ -395,6 +419,32 @@ void main() {
     );
     File('${carpeta.path}/13_pdf_comprobante.pdf').writeAsBytesSync(
         await pdfComprobante(estilo: estilo, datos: comprobante, generado: _hoy));
+
+    // Comprobante con muchos meses y cargos: se agrupan en pocas líneas.
+    var m = _mes.anterior().anterior();
+    final meses = <({Mes mes, int monto})>[];
+    for (var i = 0; i < 8; i++, m = m.siguiente()) {
+      meses.add((mes: m, monto: 25000));
+    }
+    final varios = DatosComprobante(
+      pagoId: 129,
+      fecha: _hoy,
+      monto: 8 * 25000 + 10000 + 80000,
+      metodo: MetodoPago.efectivo,
+      cancelado: true,
+      cliente: 'Beto Ruiz Hernández',
+      zona: 'El Ranchito',
+      conceptos: const [],
+      mesesCubiertos: meses,
+      cargosCubiertos: const [
+        (concepto: 'Reconexión', monto: 10000),
+        (concepto: 'Antena no devuelta', monto: 80000),
+      ],
+      pagadoHasta: m.anterior(),
+      saldoPendiente: 0,
+    );
+    File('${carpeta.path}/14_pdf_comprobante_varios.pdf').writeAsBytesSync(
+        await pdfComprobante(estilo: estilo, datos: varios, generado: _hoy));
   }, skip: !_activo);
 }
 

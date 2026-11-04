@@ -8,6 +8,7 @@ import '../../core/mes.dart';
 import '../../domain/reportes.dart';
 import '../../providers/providers.dart';
 import '../../widgets/comunes.dart';
+import '../../widgets/disposicion.dart';
 import '../pagos/comprobante_screen.dart';
 
 /// Pagos de un mes con acceso al comprobante de cada uno.
@@ -40,7 +41,9 @@ class _ComprobantesScreenState extends ConsumerState<ComprobantesScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Comprobantes de pago')),
-      body: Column(
+      body: ContenidoCentrado(
+        anchoMaximo: 900,
+        child: Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
@@ -100,6 +103,7 @@ class _ComprobantesScreenState extends ConsumerState<ComprobantesScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

@@ -195,6 +195,14 @@ class ReportesRepository {
             monto: f.readTable(_db.cargoAplicaciones).monto,
           ),
       ],
+      mesesCubiertos: conceptosMeses,
+      cargosCubiertos: [
+        for (final f in cargos)
+          (
+            concepto: f.readTable(_db.cargos).concepto,
+            monto: f.readTable(_db.cargoAplicaciones).monto,
+          ),
+      ],
       pagadoHasta: pagadoHasta(periodos),
       saldoPendiente: calcularAdeudo(periodos, hoy, cargos: cargosVigentes).total,
       notas: pago.notas,

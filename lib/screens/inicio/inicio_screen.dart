@@ -11,6 +11,7 @@ import '../../data/respaldos/respaldo_service.dart';
 import '../../domain/dashboard.dart';
 import '../../providers/providers.dart';
 import '../../widgets/comunes.dart';
+import '../../widgets/disposicion.dart';
 import '../clientes/modales.dart';
 import 'graficas.dart';
 
@@ -30,7 +31,10 @@ class InicioScreen extends ConsumerWidget {
     );
 
     return Scaffold(
-      appBar: AppBar(
+      // En escritorio la marca y los respaldos están en el panel lateral.
+      appBar: esEscritorio(context)
+          ? null
+          : AppBar(
         toolbarHeight: 76,
         title: const MarcaNetMax(alto: 40, sobreOscuro: true, conLema: true),
         actions: [

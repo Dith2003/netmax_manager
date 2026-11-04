@@ -119,6 +119,8 @@ class DatosComprobante {
     this.direccion,
     this.zona,
     required this.conceptos,
+    this.mesesCubiertos = const [],
+    this.cargosCubiertos = const [],
     this.pagadoHasta,
     required this.saldoPendiente,
     this.notas,
@@ -139,6 +141,10 @@ class DatosComprobante {
 
   /// Qué cubrió el pago: "Mensualidad noviembre 2026" o el concepto del cargo.
   final List<({String concepto, int monto})> conceptos;
+
+  /// Detalle de meses y cargos cubiertos (para agrupar meses seguidos en el comprobante).
+  final List<({Mes mes, int monto})> mesesCubiertos;
+  final List<({String concepto, int monto})> cargosCubiertos;
   final Mes? pagadoHasta;
 
   /// Adeudo vencido del cliente a la fecha en que se genera el comprobante.
@@ -147,6 +153,45 @@ class DatosComprobante {
 
   /// Número del comprobante: "000123".
   String get numero => numeroComprobante(pagoId);
+}
+
+/// Conceptos del comprobante en pocas líneas (para el formato tipo cheque):
+/// los meses seguidos se agrupan ("Mensualidades oct 2026 – dic 2026 (3)") y,
+/// si aun así son más de [maximo], los últimos se suman en "Otros N conceptos".
+List<({String concepto, int monto})> conceptosCompactos(DatosComprobante d, {int maximo = 4}) {
+  final lineas = <({String concepto, int monto})>[];
+  if (d.mesesCubiertos.isEmpty && d.cargosCubiertos.isEmpty) {
+    lineas.addAll(d.conceptos);
+  } else {
+    final meses = [...d.mesesCubiertos]..sort((a, b) => a.mes.compareTo(b.mes));
+    var i = 0;
+    while (i < meses.length) {
+      var j = i;
+      var suma = meses[i].monto;
+      while (j + 1 < meses.length && meses[j].mes.siguiente() == meses[j + 1].mes) {
+        j++;
+        suma += meses[j].monto;
+      }
+      lineas.add(j == i
+          ? (concepto: 'Mensualidad ${meses[i].mes.nombre}', monto: suma)
+          : (
+              concepto: 'Mensualidades ${meses[i].mes.nombreCorto} – '
+                  '${meses[j].mes.nombreCorto} (${j - i + 1})',
+              monto: suma,
+            ));
+      i = j + 1;
+    }
+    lineas.addAll(d.cargosCubiertos);
+  }
+  if (lineas.length <= maximo) return lineas;
+  final resto = lineas.sublist(maximo - 1);
+  return [
+    ...lineas.take(maximo - 1),
+    (
+      concepto: 'Otros ${resto.length} conceptos',
+      monto: resto.fold<int>(0, (s, c) => s + c.monto),
+    ),
+  ];
 }
 
 /// Número de comprobante a partir del id del pago: 123 -> "000123".

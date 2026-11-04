@@ -10,6 +10,7 @@ import '../../domain/cobranza.dart';
 import '../../domain/vencimientos.dart';
 import '../../providers/providers.dart';
 import '../../widgets/comunes.dart';
+import '../../widgets/disposicion.dart';
 import 'dialogos.dart';
 
 /// Estado de cuenta: todos los meses del cliente con lo pagado y lo que falta.
@@ -130,7 +131,9 @@ class EstadoCuentaScreen extends ConsumerWidget {
               label: const Text('Agregar'),
             )
           : null,
-      body: periodos.when(
+      body: ContenidoCentrado(
+        anchoMaximo: 900,
+        child: periodos.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => ErrorVista(e),
         data: (lista) {
@@ -224,6 +227,7 @@ class EstadoCuentaScreen extends ConsumerWidget {
             ],
           );
         },
+      ),
       ),
     );
   }

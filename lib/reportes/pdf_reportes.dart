@@ -371,188 +371,278 @@ Future<Uint8List> pdfClientes({
 }
 
 // ---------------------------------------------------------------------------
-// Comprobante de pago (media carta)
+// Comprobante de pago (tipo cheque: un tercio de hoja carta)
 // ---------------------------------------------------------------------------
 
-/// Comprobante de un pago, tamaño media carta, para imprimir o compartir.
+/// Tamaño del comprobante: ancho de hoja carta y un tercio de su alto
+/// (8.5 × 3.67 in), como un cheque. Caben 3 por hoja si se imprimen juntos.
+const formatoComprobante = PdfPageFormat(
+  8.5 * PdfPageFormat.inch,
+  11 / 3 * PdfPageFormat.inch,
+  marginAll: 16,
+);
+
+/// Comprobante de un pago en formato tipo cheque: talón a la izquierda (para
+/// el archivo de NET_MAX) y el comprobante del cliente a la derecha.
 Future<Uint8List> pdfComprobante({
   required EstiloPdf estilo,
   required DatosComprobante datos,
   required DateTime generado,
 }) {
-  const mediaCarta = PdfPageFormat(5.5 * PdfPageFormat.inch, 8.5 * PdfPageFormat.inch,
-      marginAll: 28);
   final doc = pw.Document(
     title: 'Comprobante ${datos.numero}',
     author: DatosNegocio.nombre,
     creator: '${DatosNegocio.nombre} Manager',
   );
+  final conceptos = conceptosCompactos(datos);
+  final saldo = datos.saldoPendiente == 0
+      ? 'Al corriente'
+      : '${formatoDinero(datos.saldoPendiente)} (al ${formatoFecha(generado)})';
 
-  pw.Widget dato(String etiqueta, String valor) => pw.Padding(
-        padding: const pw.EdgeInsets.only(bottom: 3),
-        child: pw.Row(
+  pw.Widget etiqueta(String texto) =>
+      pw.Text(texto, style: const pw.TextStyle(fontSize: 6.5, color: _gris));
+  pw.Widget valor(String texto, {double tamano = 8.5, bool negrita = false}) => pw.Text(
+        texto,
+        maxLines: 1,
+        style: pw.TextStyle(
+          fontSize: tamano,
+          color: _azul,
+          fontWeight: negrita ? pw.FontWeight.bold : pw.FontWeight.normal,
+        ),
+      );
+  pw.Widget dato(String e, String v, {double tamano = 8.5, bool negrita = false}) => pw.Padding(
+        padding: const pw.EdgeInsets.only(bottom: 4),
+        child: pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.SizedBox(
-              width: 70,
-              child: pw.Text(etiqueta, style: const pw.TextStyle(fontSize: 8.5, color: _gris)),
-            ),
-            pw.Expanded(child: pw.Text(valor, style: const pw.TextStyle(fontSize: 9.5))),
-          ],
+          children: [etiqueta(e), valor(v, tamano: tamano, negrita: negrita)],
         ),
       );
 
-  doc.addPage(pw.Page(
-    theme: estilo.tema,
-    pageFormat: mediaCarta,
-    build: (context) => pw.Stack(
-      fit: pw.StackFit.expand,
-      children: [
-        pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-          children: [
-            // Marca
-            pw.Row(
-              children: [
-                if (estilo.logo != null) ...[
-                  pw.Image(estilo.logo!, height: 36),
-                  pw.SizedBox(width: 8),
-                ],
-                pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.RichText(
-                      text: pw.TextSpan(
-                        style: pw.TextStyle(fontSize: 19, fontWeight: pw.FontWeight.bold),
-                        children: const [
-                          pw.TextSpan(text: 'NET_', style: pw.TextStyle(color: _azul)),
-                          pw.TextSpan(text: 'MAX', style: pw.TextStyle(color: _verde)),
-                        ],
-                      ),
-                    ),
-                    pw.Text(DatosNegocio.lema,
-                        style: const pw.TextStyle(fontSize: 7.5, color: _azul)),
+  pw.Widget marca(double alto, double texto) => pw.Row(
+        children: [
+          if (estilo.logo != null) ...[
+            pw.Image(estilo.logo!, height: alto),
+            pw.SizedBox(width: 5),
+          ],
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.RichText(
+                text: pw.TextSpan(
+                  style: pw.TextStyle(fontSize: texto, fontWeight: pw.FontWeight.bold),
+                  children: const [
+                    pw.TextSpan(text: 'NET_', style: pw.TextStyle(color: _azul)),
+                    pw.TextSpan(text: 'MAX', style: pw.TextStyle(color: _verde)),
                   ],
                 ),
-              ],
-            ),
-            pw.SizedBox(height: 14),
-            // Título y número
+              ),
+              if (texto > 12)
+                pw.Text(DatosNegocio.lema, style: const pw.TextStyle(fontSize: 6.5, color: _azul)),
+            ],
+          ),
+        ],
+      );
+
+  // ----- Talón (se queda en NET_MAX) -----
+  final talon = pw.Container(
+    width: 128,
+    padding: const pw.EdgeInsets.only(right: 10),
+    child: pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        marca(18, 11),
+        pw.SizedBox(height: 8),
+        dato('Comprobante', 'N° ${datos.numero}', negrita: true),
+        dato('Fecha', formatoFecha(datos.fecha)),
+        dato('Cliente', datos.cliente),
+        dato('Forma de pago', datos.metodo.etiqueta),
+        dato('Total', formatoDinero(datos.monto), tamano: 11, negrita: true),
+        pw.Spacer(),
+        pw.Text('Talón · copia NET_MAX', style: const pw.TextStyle(fontSize: 6, color: _gris)),
+      ],
+    ),
+  );
+
+  // Línea punteada para cortar el talón.
+  final corte = pw.Container(
+    width: 1,
+    margin: const pw.EdgeInsets.only(right: 12),
+    decoration: const pw.BoxDecoration(
+      border: pw.Border(
+        left: pw.BorderSide(color: _gris, width: 0.6, style: pw.BorderStyle.dashed),
+      ),
+    ),
+  );
+
+  // ----- Comprobante del cliente -----
+  final cuerpo = pw.Expanded(
+    child: pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+      children: [
+        // Encabezado: marca y número
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            marca(26, 15),
+            pw.Spacer(),
             pw.Container(
-              padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: const pw.BoxDecoration(
                 color: _azul,
-                borderRadius: pw.BorderRadius.all(pw.Radius.circular(6)),
-              ),
-              child: pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text('Comprobante de pago',
-                      style: pw.TextStyle(
-                          fontSize: 12, fontWeight: pw.FontWeight.bold, color: _crema)),
-                  pw.Text('N° ${datos.numero}',
-                      style: pw.TextStyle(
-                          fontSize: 11, fontWeight: pw.FontWeight.bold, color: _crema)),
-                ],
-              ),
-            ),
-            pw.SizedBox(height: 12),
-            dato('Fecha de pago', formatoFecha(datos.fecha)),
-            dato('Cliente', datos.cliente),
-            if (datos.direccion != null || datos.zona != null)
-              dato('Domicilio',
-                  [?datos.direccion, ?datos.zona].join(', ')),
-            if (datos.telefono != null) dato('Teléfono', datos.telefono!),
-            dato('Forma de pago', datos.metodo.etiqueta),
-            if (datos.folio != null) dato('Referencia', datos.folio!),
-            pw.SizedBox(height: 10),
-            // Conceptos
-            pw.TableHelper.fromTextArray(
-              headers: ['Concepto', 'Importe'],
-              data: [
-                for (final c in datos.conceptos) [c.concepto, formatoDinero(c.monto)],
-              ],
-              border: const pw.TableBorder(
-                horizontalInside: pw.BorderSide(color: _lineas, width: 0.5),
-                bottom: pw.BorderSide(color: _lineas, width: 0.5),
-              ),
-              headerDecoration: const pw.BoxDecoration(color: _fondoTotales),
-              headerStyle: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: _azul),
-              cellStyle: const pw.TextStyle(fontSize: 9.5),
-              cellPadding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-              columnWidths: const {0: pw.FlexColumnWidth(3), 1: pw.FixedColumnWidth(80)},
-              headerAlignments: const {0: pw.Alignment.centerLeft, 1: pw.Alignment.centerRight},
-              cellAlignments: const {0: pw.Alignment.centerLeft, 1: pw.Alignment.centerRight},
-            ),
-            pw.SizedBox(height: 8),
-            pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.end,
-              children: [
-                pw.Text('Total pagado  ', style: const pw.TextStyle(fontSize: 10, color: _gris)),
-                pw.Text(formatoDinero(datos.monto),
-                    style: pw.TextStyle(
-                        fontSize: 18, fontWeight: pw.FontWeight.bold, color: _verde)),
-              ],
-            ),
-            pw.SizedBox(height: 12),
-            pw.Container(
-              padding: const pw.EdgeInsets.all(8),
-              decoration: pw.BoxDecoration(
-                border: pw.Border.all(color: _lineas, width: 0.5),
-                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+                borderRadius: pw.BorderRadius.all(pw.Radius.circular(4)),
               ),
               child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
-                  dato('Pagado hasta',
-                      datos.pagadoHasta == null ? '—' : datos.pagadoHasta!.nombre),
-                  dato(
-                    'Saldo pendiente',
-                    datos.saldoPendiente == 0
-                        ? 'Al corriente'
-                        : '${formatoDinero(datos.saldoPendiente)} (al ${formatoFecha(generado)})',
-                  ),
-                ],
-              ),
-            ),
-            pw.Spacer(),
-            pw.Center(
-              child: pw.Text('¡Gracias por su pago!',
-                  style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: _azul)),
-            ),
-            pw.SizedBox(height: 6),
-            pw.Container(
-              padding: const pw.EdgeInsets.only(top: 6),
-              decoration: const pw.BoxDecoration(
-                border: pw.Border(top: pw.BorderSide(color: _verde, width: 1)),
-              ),
-              child: pw.Column(
-                children: [
-                  pw.Text('Tel. ${DatosNegocio.telefono}  ·  ${DatosNegocio.correo}',
-                      style: const pw.TextStyle(fontSize: 7.5, color: _gris)),
-                  pw.Text(DatosNegocio.direccion,
-                      style: const pw.TextStyle(fontSize: 7.5, color: _gris)),
+                  pw.Text('COMPROBANTE DE PAGO',
+                      style: pw.TextStyle(
+                          fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: _crema)),
+                  pw.Text('N° ${datos.numero}  ·  ${formatoFecha(datos.fecha)}',
+                      style: const pw.TextStyle(fontSize: 8, color: _crema)),
                 ],
               ),
             ),
           ],
         ),
-        if (datos.cancelado)
-          pw.Center(
-            child: pw.Transform.rotateBox(
-              angle: 0.5,
-              child: pw.Container(
-                padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(color: PdfColors.red, width: 3),
+        pw.SizedBox(height: 8),
+        // Recibimos de...
+        pw.RichText(
+          maxLines: 1,
+          text: pw.TextSpan(
+            style: const pw.TextStyle(fontSize: 9, color: _gris),
+            children: [
+              const pw.TextSpan(text: 'Recibimos de  '),
+              pw.TextSpan(
+                text: datos.cliente,
+                style: pw.TextStyle(
+                    fontSize: 10.5, color: _azul, fontWeight: pw.FontWeight.bold),
+              ),
+              if (datos.direccion != null || datos.zona != null)
+                pw.TextSpan(text: '   ${[?datos.direccion, ?datos.zona].join(', ')}'),
+            ],
+          ),
+        ),
+        pw.Container(
+          margin: const pw.EdgeInsets.only(top: 3, bottom: 6),
+          height: 0.6,
+          color: _lineas,
+        ),
+        // Conceptos y total
+        pw.Expanded(
+          child: pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+                  children: [
+                    pw.Row(children: [
+                      pw.Expanded(child: etiqueta('CONCEPTO')),
+                      etiqueta('IMPORTE'),
+                    ]),
+                    pw.SizedBox(height: 2),
+                    for (final c in conceptos)
+                      pw.Container(
+                        padding: const pw.EdgeInsets.symmetric(vertical: 2),
+                        decoration: const pw.BoxDecoration(
+                          border: pw.Border(bottom: pw.BorderSide(color: _lineas, width: 0.4)),
+                        ),
+                        child: pw.Row(children: [
+                          pw.Expanded(
+                            child: pw.Text(c.concepto,
+                                maxLines: 1, style: const pw.TextStyle(fontSize: 8.5)),
+                          ),
+                          pw.Text(formatoDinero(c.monto), style: const pw.TextStyle(fontSize: 8.5)),
+                        ]),
+                      ),
+                  ],
                 ),
-                child: pw.Text('PAGO CANCELADO',
-                    style: pw.TextStyle(
-                        fontSize: 28, fontWeight: pw.FontWeight.bold, color: PdfColors.red)),
+              ),
+              pw.SizedBox(width: 14),
+              pw.Container(
+                width: 120,
+                padding: const pw.EdgeInsets.all(8),
+                decoration: const pw.BoxDecoration(
+                  color: _fondoTotales,
+                  borderRadius: pw.BorderRadius.all(pw.Radius.circular(6)),
+                ),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    etiqueta('TOTAL PAGADO'),
+                    pw.Text(formatoDinero(datos.monto),
+                        style: pw.TextStyle(
+                            fontSize: 17, fontWeight: pw.FontWeight.bold, color: _verde)),
+                    pw.SizedBox(height: 4),
+                    etiqueta(datos.metodo.etiqueta +
+                        (datos.folio == null ? '' : ' · Ref. ${datos.folio}')),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Situación de la cuenta
+        pw.Row(
+          children: [
+            etiqueta('Pagado hasta  '),
+            valor(datos.pagadoHasta == null ? '—' : datos.pagadoHasta!.nombre, tamano: 8),
+            pw.SizedBox(width: 16),
+            etiqueta('Saldo pendiente  '),
+            valor(saldo, tamano: 8),
+            pw.Spacer(),
+            pw.Text('¡Gracias por su pago!',
+                style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: _azul)),
+          ],
+        ),
+        pw.Container(
+          margin: const pw.EdgeInsets.only(top: 4),
+          padding: const pw.EdgeInsets.only(top: 3),
+          decoration: const pw.BoxDecoration(
+            border: pw.Border(top: pw.BorderSide(color: _verde, width: 0.8)),
+          ),
+          child: pw.Text(
+            'Tel. ${DatosNegocio.telefono}  ·  ${DatosNegocio.correo}  ·  ${DatosNegocio.direccion}',
+            style: const pw.TextStyle(fontSize: 6.5, color: _gris),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  doc.addPage(pw.Page(
+    theme: estilo.tema,
+    pageFormat: formatoComprobante,
+    build: (context) => pw.Container(
+      padding: const pw.EdgeInsets.all(10),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: _lineas, width: 0.8),
+        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+      ),
+      child: pw.Stack(
+        fit: pw.StackFit.expand,
+        children: [
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+            children: [talon, corte, cuerpo],
+          ),
+          if (datos.cancelado)
+            pw.Center(
+              child: pw.Transform.rotateBox(
+                angle: 0.18,
+                child: pw.Container(
+                  padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColors.red, width: 2.5),
+                  ),
+                  child: pw.Text('PAGO CANCELADO',
+                      style: pw.TextStyle(
+                          fontSize: 24, fontWeight: pw.FontWeight.bold, color: PdfColors.red)),
+                ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     ),
   ));
   return doc.save();

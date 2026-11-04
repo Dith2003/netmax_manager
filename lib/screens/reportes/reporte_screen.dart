@@ -9,6 +9,7 @@ import '../../core/mes.dart';
 import '../../providers/providers.dart';
 import '../../reportes/pdf_reportes.dart';
 import '../../widgets/comunes.dart';
+import '../../widgets/disposicion.dart';
 import 'reportes_screen.dart';
 
 /// Vista previa de un reporte en PDF, con opciones de periodo, imprimir y compartir.
@@ -111,6 +112,88 @@ class _ReporteScreenState extends ConsumerState<ReporteScreen> {
   @override
   Widget build(BuildContext context) {
     final selector = _selectorPeriodo();
+    final vista = PdfPreview(
+      key: ValueKey(_clave),
+      build: _generar,
+      initialPageFormat: PdfPageFormat.letter,
+      canChangePageFormat: false,
+      canChangeOrientation: false,
+      canDebug: false,
+      pdfFileName: _nombreArchivo,
+      onError: (context, error) => ErrorVista(error),
+    );
+
+    // Escritorio: opciones a la izquierda y la vista previa a la derecha.
+    if (esEscritorio(context)) {
+      final texto = Theme.of(context).textTheme;
+      final scheme = Theme.of(context).colorScheme;
+      return Scaffold(
+        appBar: AppBar(title: Text(widget.tipo.titulo)),
+        body: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              width: 320,
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerLow,
+                border: Border(right: BorderSide(color: scheme.outlineVariant)),
+              ),
+              child: ListView(
+                padding: const EdgeInsets.all(20),
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: scheme.secondaryContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(widget.tipo.icono, color: scheme.secondary),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(child: Text(widget.tipo.titulo, style: texto.titleMedium)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(widget.tipo.descripcion,
+                      style: texto.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
+                  const SizedBox(height: 20),
+                  if (selector != null) ...[
+                    Text('Periodo', style: texto.labelLarge),
+                    const SizedBox(height: 8),
+                    selector,
+                    const SizedBox(height: 20),
+                  ],
+                  Text('Incluye', style: texto.labelLarge),
+                  const SizedBox(height: 8),
+                  for (final d in widget.tipo.detalles)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        children: [
+                          Icon(Icons.check, size: 16, color: scheme.secondary),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(d)),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Usa los botones de la barra de la vista previa para imprimir o '
+                    'compartir el PDF.',
+                    style: texto.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(child: vista),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text(widget.tipo.titulo)),
       body: Column(
@@ -120,18 +203,7 @@ class _ReporteScreenState extends ConsumerState<ReporteScreen> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
               child: selector,
             ),
-          Expanded(
-            child: PdfPreview(
-              key: ValueKey(_clave),
-              build: _generar,
-              initialPageFormat: PdfPageFormat.letter,
-              canChangePageFormat: false,
-              canChangeOrientation: false,
-              canDebug: false,
-              pdfFileName: _nombreArchivo,
-              onError: (context, error) => ErrorVista(error),
-            ),
-          ),
+          Expanded(child: vista),
         ],
       ),
     );
