@@ -22,13 +22,16 @@ class RegistrarPagoScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cliente = ref.watch(clienteProvider(clienteId));
     final periodos = ref.watch(periodosProvider(clienteId));
+    final cargos = ref.watch(cargosProvider(clienteId));
 
     Widget cuerpo;
     if (cliente.hasError) {
       cuerpo = ErrorVista(cliente.error!);
     } else if (periodos.hasError) {
       cuerpo = ErrorVista(periodos.error!);
-    } else if (!cliente.hasValue || !periodos.hasValue) {
+    } else if (cargos.hasError) {
+      cuerpo = ErrorVista(cargos.error!);
+    } else if (!cliente.hasValue || !periodos.hasValue || !cargos.hasValue) {
       cuerpo = const Center(child: CircularProgressIndicator());
     } else if (cliente.requireValue == null) {
       cuerpo = const Center(child: Text('El cliente no existe.'));
@@ -36,6 +39,7 @@ class RegistrarPagoScreen extends ConsumerWidget {
       cuerpo = _FormularioPago(
         cliente: cliente.requireValue!,
         periodos: periodos.requireValue,
+        cargos: cargos.requireValue,
       );
     }
 
@@ -47,10 +51,15 @@ class RegistrarPagoScreen extends ConsumerWidget {
 }
 
 class _FormularioPago extends ConsumerStatefulWidget {
-  const _FormularioPago({required this.cliente, required this.periodos});
+  const _FormularioPago({
+    required this.cliente,
+    required this.periodos,
+    required this.cargos,
+  });
 
   final Cliente cliente;
   final List<PeriodoSaldo> periodos;
+  final List<CargoSaldo> cargos;
 
   @override
   ConsumerState<_FormularioPago> createState() => _FormularioPagoState();
@@ -68,7 +77,8 @@ class _FormularioPagoState extends ConsumerState<_FormularioPago> {
   void initState() {
     super.initState();
     // Sugerencia: lo que debe, o una mensualidad si está al corriente.
-    final adeudo = calcularAdeudo(widget.periodos, DateTime.now()).total;
+    final adeudo =
+        calcularAdeudo(widget.periodos, DateTime.now(), cargos: widget.cargos).total;
     _monto.text = _centavosATexto(adeudo > 0 ? adeudo : widget.cliente.precioMensual);
   }
 
@@ -107,7 +117,11 @@ class _FormularioPagoState extends ConsumerState<_FormularioPago> {
   Future<void> _guardar(ResultadoAplicacion reparto) async {
     final monto = _centavos;
     if (monto == null) return;
-    final meses = describirMeses(reparto.aplicaciones.map((a) => a.mes).toList());
+    final meses = [
+      if (reparto.aplicaciones.isNotEmpty)
+        describirMeses(reparto.aplicaciones.map((a) => a.mes).toList()),
+      for (final c in reparto.aplicacionesCargos) c.concepto,
+    ].join(', ');
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -156,12 +170,13 @@ class _FormularioPagoState extends ConsumerState<_FormularioPago> {
   @override
   Widget build(BuildContext context) {
     final c = widget.cliente;
-    final adeudo = calcularAdeudo(widget.periodos, DateTime.now());
+    final adeudo = calcularAdeudo(widget.periodos, DateTime.now(), cargos: widget.cargos);
     final hasta = pagadoHasta(widget.periodos);
     final monto = _centavos;
     final reparto = monto == null
         ? null
-        : PagosRepository.previsualizar(cliente: c, periodos: widget.periodos, monto: monto);
+        : PagosRepository.previsualizar(
+            cliente: c, periodos: widget.periodos, cargos: widget.cargos, monto: monto);
     final excede = reparto != null && reparto.sobrante > 0;
     final cancelado = c.estado == EstadoCliente.cancelado;
     const espacio = SizedBox(height: 16);
@@ -322,6 +337,19 @@ class _VistaPrevia extends StatelessWidget {
     return Card(
       child: Column(
         children: [
+          for (final c in reparto.aplicacionesCargos)
+            ListTile(
+              dense: true,
+              leading: Icon(
+                c.completo ? Icons.check_circle : Icons.timelapse,
+                color: c.completo ? Colors.green : Colors.orange,
+              ),
+              title: Text(c.concepto),
+              subtitle: Text(c.completo
+                  ? 'Cargo extra · liquidado'
+                  : 'Cargo extra · abono, faltan ${formatoDinero(c.saldoAntes - c.monto)}'),
+              trailing: Text(formatoDinero(c.monto)),
+            ),
           for (final a in reparto.aplicaciones)
             ListTile(
               dense: true,

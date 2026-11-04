@@ -170,6 +170,90 @@ class VencimientosRepository {
     return fila.read<int>('n') > 0;
   }
 
+  // ----- Cargos extra -----
+
+  /// Cargos vigentes (no cancelados) del cliente con lo pagado de cada uno.
+  Selectable<CargoSaldo> consultaCargos(int clienteId) {
+    return _db.customSelect(
+      '''
+      SELECT c.id, c.concepto, c.fecha, c.monto,
+        COALESCE((
+          SELECT SUM(ca.monto)
+          FROM cargo_aplicaciones ca
+          JOIN pagos pg ON pg.id = ca.pago_id
+          WHERE ca.cargo_id = c.id AND pg.cancelado = 0
+        ), 0) AS pagado
+      FROM cargos c
+      WHERE c.cliente_id = ? AND c.cancelado = 0
+      ORDER BY c.fecha, c.id
+      ''',
+      variables: [Variable.withInt(clienteId)],
+      readsFrom: {_db.cargos, _db.cargoAplicaciones, _db.pagos},
+    ).map(_cargoDeFila);
+  }
+
+  static CargoSaldo _cargoDeFila(QueryRow f) => CargoSaldo(
+        id: f.read<int>('id'),
+        concepto: f.read<String>('concepto'),
+        fecha: f.read<DateTime>('fecha'),
+        monto: f.read<int>('monto'),
+        pagado: f.read<int>('pagado'),
+      );
+
+  Stream<List<CargoSaldo>> vigilarCargos(int clienteId) => consultaCargos(clienteId).watch();
+
+  /// Agrega un cargo extra (p. ej. "Antena no devuelta"). Devuelve su id.
+  Future<int> agregarCargo({
+    required int clienteId,
+    required String concepto,
+    required int monto,
+    required DateTime fecha,
+    int? equipoId,
+    String? notas,
+  }) {
+    if (concepto.trim().isEmpty) {
+      throw const OperacionNoPermitida('Escribe el concepto del cargo.');
+    }
+    if (monto <= 0) {
+      throw const OperacionNoPermitida('El monto del cargo debe ser mayor a \$0.');
+    }
+    return _db.into(_db.cargos).insert(CargosCompanion.insert(
+          clienteId: clienteId,
+          fecha: fecha,
+          concepto: concepto.trim(),
+          monto: monto,
+          equipoId: Value(equipoId),
+          notas: Value(notas),
+          creadoEn: DateTime.now(),
+        ));
+  }
+
+  /// Cancela un cargo capturado por error (no se borra). No se permite si ya tiene
+  /// pagos vigentes: primero hay que cancelar el pago.
+  Future<void> cancelarCargo(int cargoId, {String? motivo}) async {
+    final fila = await _db.customSelect(
+      '''
+      SELECT COUNT(*) AS n FROM cargo_aplicaciones ca
+      JOIN pagos pg ON pg.id = ca.pago_id
+      WHERE ca.cargo_id = ? AND pg.cancelado = 0
+      ''',
+      variables: [Variable.withInt(cargoId)],
+      readsFrom: {_db.cargoAplicaciones, _db.pagos},
+    ).getSingle();
+    if (fila.read<int>('n') > 0) {
+      throw const OperacionNoPermitida(
+          'Ese cargo ya tiene pagos. Cancela el pago antes de cancelar el cargo.');
+    }
+    final cargo = await (_db.select(_db.cargos)..where((c) => c.id.equals(cargoId)))
+        .getSingleOrNull();
+    if (cargo == null || cargo.cancelado) return;
+    final nota = 'CANCELADO${motivo == null || motivo.isEmpty ? '' : ': $motivo'}';
+    await (_db.update(_db.cargos)..where((c) => c.id.equals(cargoId))).write(CargosCompanion(
+      cancelado: const Value(true),
+      notas: Value(cargo.notas == null ? nota : '${cargo.notas}\n$nota'),
+    ));
+  }
+
   // ----- Adeudos -----
 
   /// Clientes que deben algo a la fecha [hoy], del que más debe al que menos.
@@ -187,12 +271,45 @@ class VencimientosRepository {
       FROM periodos p
       JOIN clientes c ON c.id = p.cliente_id
       ''',
-      readsFrom: {_db.periodos, _db.pagoAplicaciones, _db.pagos, _db.clientes},
-    ).watch().map((filas) {
-      final datos = <int, ({QueryRow fila, List<PeriodoSaldo> periodos})>{};
+      readsFrom: {
+        _db.periodos,
+        _db.pagoAplicaciones,
+        _db.pagos,
+        _db.clientes,
+        // No se leen en esta consulta, pero si cambian hay que recalcular.
+        _db.cargos,
+        _db.cargoAplicaciones,
+      },
+    ).watch().asyncMap((filas) async {
+      final cargos = await _db.customSelect(
+        '''
+        SELECT c.cliente_id, cl.nombre, cl.telefono, cl.zona, cl.estado,
+          c.id, c.concepto, c.fecha, c.monto,
+          COALESCE((
+            SELECT SUM(ca.monto)
+            FROM cargo_aplicaciones ca
+            JOIN pagos pg ON pg.id = ca.pago_id
+            WHERE ca.cargo_id = c.id AND pg.cancelado = 0
+          ), 0) AS pagado
+        FROM cargos c
+        JOIN clientes cl ON cl.id = c.cliente_id
+        WHERE c.cancelado = 0
+        ''',
+        readsFrom: {_db.cargos, _db.cargoAplicaciones, _db.pagos, _db.clientes},
+      ).get();
+
+      final datos = <int,
+          ({QueryRow fila, List<PeriodoSaldo> periodos, List<CargoSaldo> cargos})>{};
+      for (final f in cargos) {
+        final id = f.read<int>('cliente_id');
+        final entrada = datos.putIfAbsent(
+            id, () => (fila: f, periodos: <PeriodoSaldo>[], cargos: <CargoSaldo>[]));
+        entrada.cargos.add(_cargoDeFila(f));
+      }
       for (final f in filas) {
         final id = f.read<int>('cliente_id');
-        final entrada = datos.putIfAbsent(id, () => (fila: f, periodos: <PeriodoSaldo>[]));
+        final entrada = datos.putIfAbsent(
+            id, () => (fila: f, periodos: <PeriodoSaldo>[], cargos: <CargoSaldo>[]));
         entrada.periodos.add(PeriodoSaldo(
           id: f.read<int>('id'),
           mes: Mes.parse(f.read<String>('mes')),
@@ -204,7 +321,7 @@ class VencimientosRepository {
       }
       final resultado = <AdeudoCliente>[];
       for (final MapEntry(key: id, value: d) in datos.entries) {
-        final adeudo = calcularAdeudo(d.periodos, hoy);
+        final adeudo = calcularAdeudo(d.periodos, hoy, cargos: d.cargos);
         if (!adeudo.tieneAdeudo) continue;
         resultado.add(AdeudoCliente(
           clienteId: id,

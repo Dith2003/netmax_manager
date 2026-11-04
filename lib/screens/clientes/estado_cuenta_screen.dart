@@ -10,6 +10,7 @@ import '../../domain/cobranza.dart';
 import '../../domain/vencimientos.dart';
 import '../../providers/providers.dart';
 import '../../widgets/comunes.dart';
+import 'dialogos.dart';
 
 /// Estado de cuenta: todos los meses del cliente con lo pagado y lo que falta.
 /// Permite marcar cortesía, agregar un mes a mano y quitar meses sin pagos.
@@ -53,10 +54,65 @@ class EstadoCuentaScreen extends ConsumerWidget {
     );
   }
 
+  Future<void> _agregarCargo(BuildContext context, WidgetRef ref) async {
+    final datos = await mostrarDialogoCargo(context);
+    if (datos == null || !context.mounted) return;
+    await _ejecutar(
+      context,
+      () => ref.read(vencimientosRepositoryProvider).agregarCargo(
+            clienteId: clienteId,
+            concepto: datos.concepto,
+            monto: datos.monto,
+            fecha: datos.fecha,
+            notas: datos.notas,
+          ),
+      'Cargo agregado: ${datos.concepto}',
+    );
+  }
+
+  Future<void> _elegirQueAgregar(
+      BuildContext context, WidgetRef ref, List<PeriodoSaldo> periodos) async {
+    final opcion = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.calendar_month),
+              title: const Text('Mes de cobro'),
+              subtitle: const Text('Cobrar un mes que no se generó solo'),
+              onTap: () => Navigator.of(context).pop('mes'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.receipt),
+              title: const Text('Cargo extra'),
+              subtitle: const Text('Equipo no devuelto, reconexión u otro concepto'),
+              onTap: () => Navigator.of(context).pop('cargo'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!context.mounted) return;
+    switch (opcion) {
+      case 'mes':
+        await _agregarMes(context, ref, periodos);
+      case 'cargo':
+        await _agregarCargo(context, ref);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cliente = ref.watch(clienteProvider(clienteId));
     final periodos = ref.watch(periodosProvider(clienteId));
+    final cargos = ref.watch(cargosProvider(clienteId));
+    final listaCargos = cargos.when(
+      data: (c) => c,
+      loading: () => const <CargoSaldo>[],
+      error: (_, _) => const <CargoSaldo>[],
+    );
     final nombre = cliente.when(
       data: (c) => c?.nombre ?? '',
       loading: () => '',
@@ -69,9 +125,9 @@ class EstadoCuentaScreen extends ConsumerWidget {
       ),
       floatingActionButton: periodos.hasValue
           ? FloatingActionButton.extended(
-              onPressed: () => _agregarMes(context, ref, periodos.requireValue),
+              onPressed: () => _elegirQueAgregar(context, ref, periodos.requireValue),
               icon: const Icon(Icons.add),
-              label: const Text('Agregar mes'),
+              label: const Text('Agregar'),
             )
           : null,
       body: periodos.when(
@@ -79,7 +135,7 @@ class EstadoCuentaScreen extends ConsumerWidget {
         error: (e, _) => ErrorVista(e),
         data: (lista) {
           final hoy = DateTime.now();
-          final adeudo = calcularAdeudo(lista, hoy);
+          final adeudo = calcularAdeudo(lista, hoy, cargos: listaCargos);
           final ordenados = [...lista]..sort((a, b) => b.mes.compareTo(a.mes));
           return ListView(
             padding: const EdgeInsets.only(bottom: 88),
@@ -89,17 +145,60 @@ class EstadoCuentaScreen extends ConsumerWidget {
                     ? 'Debe ${formatoDinero(adeudo.total)}'
                     : 'Al corriente'),
                 subtitle: Text(adeudo.tieneAdeudo
-                    ? '${adeudo.meses} ${adeudo.meses == 1 ? 'mes vencido' : 'meses vencidos'}'
-                        ' desde ${formatoFechaCorta(adeudo.vencidoDesde!)}'
+                    ? '${adeudo.descripcion} desde ${formatoFechaCorta(adeudo.vencidoDesde!)}'
                     : 'No tiene meses vencidos'),
               ),
               const Divider(height: 1),
+              if (listaCargos.isNotEmpty) ...[
+                const SeccionTitulo('Cargos extra'),
+                for (final c in listaCargos)
+                  ListTile(
+                    leading: Icon(
+                      c.liquidado ? Icons.check_circle : Icons.receipt,
+                      color: c.liquidado ? Colors.green : Theme.of(context).colorScheme.error,
+                    ),
+                    title: Text(c.concepto),
+                    subtitle: Text([
+                      formatoFechaCorta(c.fecha),
+                      if (c.liquidado) 'Pagado',
+                      if (!c.liquidado && c.pagado > 0) 'pagado ${formatoDinero(c.pagado)}',
+                    ].join(' · ')),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(formatoDinero(c.monto)),
+                        PopupMenuButton<String>(
+                          tooltip: 'Opciones del cargo',
+                          onSelected: (_) async {
+                            final ok = await confirmar(
+                              context,
+                              titulo: 'Cancelar cargo',
+                              mensaje: '¿Cancelar "${c.concepto}" por ${formatoDinero(c.monto)}? '
+                                  'No se borra: queda registrado como cancelado.',
+                              textoSi: 'Cancelar cargo',
+                            );
+                            if (!ok || !context.mounted) return;
+                            await _ejecutar(
+                              context,
+                              () => ref.read(vencimientosRepositoryProvider).cancelarCargo(c.id),
+                              'Cargo cancelado',
+                            );
+                          },
+                          itemBuilder: (_) => const [
+                            PopupMenuItem(value: 'cancelar', child: Text('Cancelar cargo')),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                const SeccionTitulo('Meses'),
+              ],
               if (ordenados.isEmpty)
                 const Padding(
                   padding: EdgeInsets.all(24),
                   child: Text(
                     'Todavía no hay meses de cobro. Se generan a partir del primer mes '
-                    'de cobro del cliente, o puedes agregar uno con "Agregar mes".',
+                    'de cobro del cliente, o puedes agregar uno con "Agregar".',
                     textAlign: TextAlign.center,
                   ),
                 ),

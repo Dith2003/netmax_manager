@@ -250,12 +250,17 @@ class _SeccionPagos extends ConsumerWidget {
     final pagos = ref.watch(pagosProvider(cliente.id));
     final scheme = Theme.of(context).colorScheme;
 
+    final cargos = ref.watch(cargosProvider(cliente.id));
     final resumen = periodos.when(
       loading: () => const LinearProgressIndicator(),
       error: (e, _) => ErrorVista(e),
       data: (lista) {
         final hasta = pagadoHasta(lista);
-        final adeudo = calcularAdeudo(lista, DateTime.now());
+        final adeudo = calcularAdeudo(lista, DateTime.now(),
+            cargos: cargos.when(
+                data: (c) => c,
+                loading: () => const <CargoSaldo>[],
+                error: (_, _) => const <CargoSaldo>[]));
         return ListTile(
           leading: Icon(
             adeudo.tieneAdeudo ? Icons.warning_amber : Icons.verified,
@@ -263,8 +268,7 @@ class _SeccionPagos extends ConsumerWidget {
           ),
           title: Text(hasta == null ? 'Sin meses pagados' : 'Pagado hasta ${hasta.nombre}'),
           subtitle: Text(adeudo.tieneAdeudo
-              ? 'Debe ${formatoDinero(adeudo.total)} '
-                  '(${adeudo.meses} ${adeudo.meses == 1 ? 'mes vencido' : 'meses vencidos'})'
+              ? 'Debe ${formatoDinero(adeudo.total)} (${adeudo.descripcion})'
               : 'Al corriente'),
           trailing: const Text('Estado de cuenta ›'),
           onTap: () => context.push('/clientes/${cliente.id}/estado-cuenta'),
@@ -300,6 +304,7 @@ class _SeccionPagos extends ConsumerWidget {
                       formatoFechaCorta(p.pago.fechaPago),
                       if (p.meses.isNotEmpty)
                         'Cubre ${describirMeses(p.meses.map((m) => m.mes).toList())}',
+                      for (final c in p.cargos) 'Cargo: ${c.concepto}',
                       if (p.pago.folio != null) 'Folio ${p.pago.folio}',
                       if (p.pago.cancelado) 'CANCELADO',
                     ].join(' · ')),
@@ -384,6 +389,26 @@ class _SeccionEquipos extends ConsumerWidget {
 
   final Cliente cliente;
 
+  /// Registra un cargo extra por un equipo de NetMAX que el cliente no devolvió.
+  Future<void> _cobrarNoDevuelto(BuildContext context, WidgetRef ref, Equipo e) async {
+    final datos = await mostrarDialogoCargo(
+      context,
+      conceptoInicial:
+          '${e.tipo}${e.marcaModelo == null ? '' : ' ${e.marcaModelo}'} no devuelto',
+      montoInicial: e.costo,
+    );
+    if (datos == null) return;
+    await ref.read(vencimientosRepositoryProvider).agregarCargo(
+          clienteId: cliente.id,
+          concepto: datos.concepto,
+          monto: datos.monto,
+          fecha: datos.fecha,
+          equipoId: e.id,
+          notas: datos.notas,
+        );
+    if (context.mounted) mostrarMensaje(context, 'Cargo agregado: ${datos.concepto}');
+  }
+
   Future<void> _retirar(BuildContext context, WidgetRef ref, Equipo e) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -455,9 +480,18 @@ class _SeccionEquipos extends ConsumerWidget {
                       if (e.fechaRetiro != null) 'Retirado ${formatoFechaCorta(e.fechaRetiro!)}',
                     ].join(' · ')),
                     trailing: e.fechaRetiro == null
-                        ? TextButton(
-                            onPressed: () => _retirar(context, ref, e),
-                            child: const Text('Retirar'),
+                        ? PopupMenuButton<String>(
+                            tooltip: 'Opciones del equipo',
+                            onSelected: (opcion) => opcion == 'retirar'
+                                ? _retirar(context, ref, e)
+                                : _cobrarNoDevuelto(context, ref, e),
+                            itemBuilder: (_) => [
+                              const PopupMenuItem(
+                                  value: 'retirar', child: Text('Registrar retiro')),
+                              if (e.propiedad == PropiedadEquipo.netmax)
+                                const PopupMenuItem(
+                                    value: 'cobrar', child: Text('Cobrar equipo no devuelto')),
+                            ],
                           )
                         : null,
                   ),

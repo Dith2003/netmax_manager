@@ -25,12 +25,15 @@ class DatosPago {
 
 /// Un pago con los meses que cubrió.
 class PagoConDetalle {
-  const PagoConDetalle({required this.pago, required this.meses});
+  const PagoConDetalle({required this.pago, required this.meses, this.cargos = const []});
 
   final Pago pago;
 
   /// Mes y monto aplicado a cada mes.
   final List<({Mes mes, int monto})> meses;
+
+  /// Cargos extra que cubrió el pago.
+  final List<({String concepto, int monto})> cargos;
 }
 
 /// Error de regla de negocio que se muestra tal cual al usuario.
@@ -101,11 +104,13 @@ class PagosRepository {
   static ResultadoAplicacion previsualizar({
     required Cliente cliente,
     required List<PeriodoSaldo> periodos,
+    List<CargoSaldo> cargos = const [],
     required int monto,
   }) {
     return aplicarPago(
       monto: monto,
       periodos: periodos,
+      cargos: cargos,
       precioMensual: cliente.precioMensual,
       diaCorte: cliente.diaCorte,
       primerMes: primerMesDeCobro(
@@ -134,7 +139,9 @@ class PagosRepository {
       // Asegura que existan los meses que ya le corresponden antes de repartir.
       await _vencimientos.generarParaCliente(clienteId, _ahora());
       final periodos = await obtenerPeriodos(clienteId);
-      final resultado = previsualizar(cliente: cliente, periodos: periodos, monto: datos.monto);
+      final cargos = await _vencimientos.consultaCargos(clienteId).get();
+      final resultado = previsualizar(
+          cliente: cliente, periodos: periodos, cargos: cargos, monto: datos.monto);
       if (resultado.sobrante > 0) {
         throw const PagoNoPermitido(
             'El pago cubre más de $maxMesesAdelantados meses adelantados. Revisa el monto.');
@@ -165,6 +172,13 @@ class PagosRepository {
         await _db.into(_db.pagoAplicaciones).insert(PagoAplicacionesCompanion.insert(
               pagoId: pagoId,
               periodoId: a.periodoId ?? idsNuevos[a.mes]!,
+              monto: a.monto,
+            ));
+      }
+      for (final a in resultado.aplicacionesCargos) {
+        await _db.into(_db.cargoAplicaciones).insert(CargoAplicacionesCompanion.insert(
+              pagoId: pagoId,
+              cargoId: a.cargoId,
               monto: a.monto,
             ));
       }
@@ -207,7 +221,20 @@ class PagosRepository {
         OrderingTerm.desc(_db.pagos.id),
       ]);
 
-    return consulta.watch().map((filas) {
+    return consulta.watch().asyncMap((filas) async {
+      // Cargos extra cubiertos por los pagos de este cliente.
+      final filasCargos = await (_db.select(_db.cargoAplicaciones).join([
+        innerJoin(_db.cargos, _db.cargos.id.equalsExp(_db.cargoAplicaciones.cargoId)),
+      ])
+            ..where(_db.cargos.clienteId.equals(clienteId)))
+          .get();
+      final cargosPorPago = <int, List<({String concepto, int monto})>>{};
+      for (final f in filasCargos) {
+        final a = f.readTable(_db.cargoAplicaciones);
+        final c = f.readTable(_db.cargos);
+        cargosPorPago.putIfAbsent(a.pagoId, () => []).add((concepto: c.concepto, monto: a.monto));
+      }
+
       final pagos = <int, Pago>{};
       final meses = <int, List<({Mes mes, int monto})>>{};
       for (final fila in filas) {
@@ -225,6 +252,7 @@ class PagosRepository {
           PagoConDetalle(
             pago: p,
             meses: meses[p.id]!..sort((a, b) => a.mes.compareTo(b.mes)),
+            cargos: cargosPorPago[p.id] ?? const [],
           ),
       ];
     });

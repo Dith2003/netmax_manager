@@ -215,4 +215,67 @@ void main() {
       expect(describirMeses([Mes(2026, 8), Mes(2026, 10)]), 'ago 2026, oct 2026');
     });
   });
+
+  group('cargos extra', () {
+    CargoSaldo cargo(int id, DateTime fecha, int monto, {int pagado = 0}) =>
+        CargoSaldo(id: id, concepto: 'Cargo $id', fecha: fecha, monto: monto, pagado: pagado);
+
+    test('el pago cubre meses y cargos en orden de fecha', () {
+      final r = aplicarPago(
+        monto: 70000,
+        periodos: [periodo(1, '2026-09'), periodo(2, '2026-10')], // vencen 5-sep y 5-oct
+        cargos: [cargo(9, DateTime(2026, 9, 20), 30000)],
+        precioMensual: 25000,
+        diaCorte: 5,
+        primerMes: Mes(2026, 9),
+      );
+      // sep (250) -> cargo del 20-sep (300) -> oct (150 de 250)
+      expect(r.aplicaciones.map((a) => a.monto), [25000, 15000]);
+      expect(r.aplicacionesCargos.single.monto, 30000);
+      expect(r.aplicacionesCargos.single.completo, isTrue);
+      expect(r.sobrante, 0);
+    });
+
+    test('con la misma fecha va primero el mes', () {
+      final r = aplicarPago(
+        monto: 25000,
+        periodos: [periodo(1, '2026-10')],
+        cargos: [cargo(9, DateTime(2026, 10, 5), 30000)],
+        precioMensual: 25000,
+        diaCorte: 5,
+        primerMes: Mes(2026, 10),
+      );
+      expect(r.aplicaciones.single.monto, 25000);
+      expect(r.aplicacionesCargos, isEmpty);
+    });
+
+    test('lo que sobra después de los cargos adelanta meses', () {
+      final r = aplicarPago(
+        monto: 55000,
+        periodos: [],
+        cargos: [cargo(9, DateTime(2026, 10, 1), 30000)],
+        precioMensual: 25000,
+        diaCorte: 5,
+        primerMes: Mes(2026, 11),
+      );
+      expect(r.aplicacionesCargos.single.monto, 30000);
+      expect(r.periodosNuevos.single.mes, Mes(2026, 11));
+    });
+
+    test('el adeudo incluye cargos desde su fecha', () {
+      final a = calcularAdeudo(
+        [periodo(1, '2026-10')],
+        DateTime(2026, 11, 3),
+        cargos: [
+          cargo(1, DateTime(2026, 11, 3), 80000), // hoy: ya se debe
+          cargo(2, DateTime(2026, 11, 10), 10000), // futuro: todavía no
+          cargo(3, DateTime(2026, 9, 1), 5000, pagado: 5000), // pagado
+        ],
+      );
+      expect(a.total, 25000 + 80000);
+      expect(a.meses, 1);
+      expect(a.cargos, 1);
+      expect(a.descripcion, '1 mes vencido y 1 cargo');
+    });
+  });
 }

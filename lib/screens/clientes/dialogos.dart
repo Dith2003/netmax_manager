@@ -394,3 +394,128 @@ Future<String?> confirmarCancelarPago(BuildContext context, {required String mon
     ),
   );
 }
+
+// ---------------------------------------------------------------------------
+// Cargo extra
+// ---------------------------------------------------------------------------
+
+typedef DatosCargo = ({String concepto, int monto, DateTime fecha, String? notas});
+
+/// Captura un cargo extra (p. ej. equipo no devuelto). Devuelve null si se cancela.
+Future<DatosCargo?> mostrarDialogoCargo(
+  BuildContext context, {
+  String conceptoInicial = '',
+  int? montoInicial,
+}) {
+  return showDialog<DatosCargo>(
+    context: context,
+    builder: (_) => _DialogoCargo(conceptoInicial, montoInicial),
+  );
+}
+
+class _DialogoCargo extends StatefulWidget {
+  const _DialogoCargo(this.conceptoInicial, this.montoInicial);
+
+  final String conceptoInicial;
+  final int? montoInicial;
+
+  @override
+  State<_DialogoCargo> createState() => _DialogoCargoState();
+}
+
+class _DialogoCargoState extends State<_DialogoCargo> {
+  final _formKey = GlobalKey<FormState>();
+  late final _concepto = TextEditingController(text: widget.conceptoInicial);
+  late final _monto = TextEditingController(
+    text: widget.montoInicial == null
+        ? ''
+        : (widget.montoInicial! % 100 == 0
+            ? '${widget.montoInicial! ~/ 100}'
+            : '${widget.montoInicial! ~/ 100}.${(widget.montoInicial! % 100).toString().padLeft(2, '0')}'),
+  );
+  final _notas = TextEditingController();
+  DateTime _fecha = soloFecha(DateTime.now());
+
+  @override
+  void dispose() {
+    _concepto.dispose();
+    _monto.dispose();
+    _notas.dispose();
+    super.dispose();
+  }
+
+  void _aceptar() {
+    if (!_formKey.currentState!.validate()) return;
+    Navigator.of(context).pop((
+      concepto: _concepto.text.trim(),
+      monto: textoACentavos(_monto.text),
+      fecha: _fecha,
+      notas: textoONull(_notas.text),
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const espacio = SizedBox(height: 12);
+    return AlertDialog(
+      title: const Text('Agregar cargo extra'),
+      content: SizedBox(
+        width: 400,
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: _concepto,
+                  decoration: const InputDecoration(
+                    labelText: 'Concepto *',
+                    helperText: 'Ej. Antena no devuelta, reconexión…',
+                    border: OutlineInputBorder(),
+                  ),
+                  textCapitalization: TextCapitalization.sentences,
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Escribe el concepto' : null,
+                ),
+                espacio,
+                TextFormField(
+                  controller: _monto,
+                  decoration: const InputDecoration(
+                    labelText: 'Monto *',
+                    prefixText: '\$ ',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  validator: validarMontoObligatorio,
+                ),
+                espacio,
+                _CampoFecha(
+                  etiqueta: 'Fecha del cargo',
+                  fecha: _fecha,
+                  onCambio: (f) => setState(() => _fecha = f),
+                ),
+                espacio,
+                TextFormField(
+                  controller: _notas,
+                  decoration: const InputDecoration(
+                    labelText: 'Notas',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 2,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(onPressed: _aceptar, child: const Text('Agregar')),
+      ],
+    );
+  }
+}

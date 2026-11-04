@@ -74,3 +74,30 @@ void mostrarMensaje(BuildContext context, String mensaje) {
     ..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(mensaje)));
 }
+
+/// Pide confirmación con un diálogo Sí/No. Devuelve true si confirmó.
+Future<bool> confirmar(
+  BuildContext context, {
+  required String titulo,
+  required String mensaje,
+  String textoSi = 'Sí',
+}) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(titulo),
+      content: Text(mensaje),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('No'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text(textoSi),
+        ),
+      ],
+    ),
+  );
+  return ok ?? false;
+}

@@ -5,7 +5,7 @@ import 'package:netmax_manager/data/db/database.dart';
 /// Simula una base de datos creada con la versión 1 (Sprint 1–3) y comprueba
 /// que al abrirla con la versión actual se migra sin perder datos.
 void main() {
-  test('v1 → v2: agrega primer_mes_cobro con el mes de la fecha de alta', () async {
+  test('v1 → v3: primer_mes_cobro con el mes de alta y tablas de cargos', () async {
     final db = AppDatabase(NativeDatabase.memory(setup: (raw) {
       // Solo hace falta la tabla que cambia en la migración.
       raw.execute('''
@@ -41,7 +41,13 @@ void main() {
     expect(clientes.single.primerMesCobro, '2025-03');
     expect(clientes.single.fechaAlta.year, 2025);
 
+    // v3: existen las tablas de cargos extra.
+    final cargos = await db.select(db.cargos).get();
+    expect(cargos, isEmpty);
+    final aplicaciones = await db.select(db.cargoAplicaciones).get();
+    expect(aplicaciones, isEmpty);
+
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 2);
+    expect(version.read<int>('user_version'), 3);
   });
 }

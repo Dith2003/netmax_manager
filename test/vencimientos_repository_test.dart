@@ -142,4 +142,67 @@ void main() {
     );
     expect(await meses(id), ['2026-11']);
   });
+
+  group('cargos extra', () {
+    test('un cliente con solo un cargo aparece en adeudos', () async {
+      final id = await nuevoCliente('Ana', primerMes: Mes(2026, 11));
+      await vencimientos.agregarCargo(
+          clienteId: id, concepto: 'Antena no devuelta', monto: 80000, fecha: DateTime(2026, 11, 1));
+
+      final adeudos = await vencimientos.vigilarAdeudos(DateTime(2026, 11, 3)).first;
+      expect(adeudos.single.adeudo.total, 80000);
+      expect(adeudos.single.adeudo.cargos, 1);
+      expect(adeudos.single.adeudo.meses, 0);
+    });
+
+    test('el pago cubre el cargo y queda en el historial del pago', () async {
+      final id = await nuevoCliente('Ana', primerMes: Mes(2026, 10)); // oct y nov
+      await vencimientos.agregarCargo(
+          clienteId: id, concepto: 'Reconexión', monto: 10000, fecha: DateTime(2026, 10, 20));
+
+      // oct (5-oct) 250 -> reconexión (20-oct) 100 -> nov (5-nov) 50
+      await pagos.registrarPago(id, DatosPago(monto: 40000, fecha: ahora));
+
+      final cargos = await vencimientos.consultaCargos(id).get();
+      expect(cargos.single.liquidado, isTrue);
+      final periodos = await pagos.obtenerPeriodos(id);
+      expect(periodos.map((p) => p.pagado), [25000, 5000]);
+
+      final historial = await pagos.vigilarPagos(id).first;
+      expect(historial.single.cargos.single.concepto, 'Reconexión');
+      expect(historial.single.meses.length, 2);
+    });
+
+    test('cancelar el pago regresa el saldo del cargo', () async {
+      final id = await nuevoCliente('Ana', primerMes: Mes(2026, 12)); // sin meses aún
+      final cargoId = await vencimientos.agregarCargo(
+          clienteId: id, concepto: 'Antena', monto: 50000, fecha: DateTime(2026, 11, 1));
+      final pagoId = await pagos.registrarPago(id, DatosPago(monto: 50000, fecha: ahora));
+
+      // Con pago vigente no se puede cancelar el cargo.
+      expect(() => vencimientos.cancelarCargo(cargoId), throwsA(isA<OperacionNoPermitida>()));
+
+      await pagos.cancelarPago(pagoId);
+      expect((await vencimientos.consultaCargos(id).get()).single.saldo, 50000);
+
+      await vencimientos.cancelarCargo(cargoId, motivo: 'Sí devolvió la antena');
+      expect(await vencimientos.consultaCargos(id).get(), isEmpty);
+      final adeudos = await vencimientos.vigilarAdeudos(DateTime(2026, 11, 3)).first;
+      expect(adeudos, isEmpty);
+    });
+
+    test('no permite cargos sin concepto o en cero', () async {
+      final id = await nuevoCliente('Ana', primerMes: Mes(2026, 11));
+      expect(
+        () => vencimientos.agregarCargo(
+            clienteId: id, concepto: '  ', monto: 1000, fecha: DateTime(2026, 11, 1)),
+        throwsA(isA<OperacionNoPermitida>()),
+      );
+      expect(
+        () => vencimientos.agregarCargo(
+            clienteId: id, concepto: 'X', monto: 0, fecha: DateTime(2026, 11, 1)),
+        throwsA(isA<OperacionNoPermitida>()),
+      );
+    });
+  });
 }

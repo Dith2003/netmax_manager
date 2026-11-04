@@ -49,18 +49,24 @@ void main() {
               p(2, 9, pagado: 25000),
               p(3, 10, pagado: 10000),
             ])),
+        cargosProvider.overrideWith((ref, id) => Stream.value([
+              CargoSaldo(
+                  id: 1, concepto: 'Router no devuelto', fecha: DateTime(2026, 10, 20), monto: 60000),
+            ])),
       ],
       child: const MaterialApp(home: EstadoCuentaScreen(clienteId: 1)),
     ));
     await tester.pumpAndSettle();
 
     expect(find.text('Estado de cuenta · Ana López'), findsOneWidget);
-    expect(find.text(r'Debe $150.00'), findsOneWidget);
+    expect(find.text(r'Debe $750.00'), findsOneWidget);
+    expect(find.text('Cargos extra'), findsOneWidget);
+    expect(find.text('Router no devuelto'), findsOneWidget);
     expect(find.text('agosto 2026'), findsOneWidget);
     expect(find.textContaining('Cortesía'), findsOneWidget);
     expect(find.textContaining('Pagado'), findsOneWidget);
     expect(find.text(r'falta $150.00'), findsOneWidget);
-    expect(find.text('Agregar mes'), findsOneWidget);
+    expect(find.text('Agregar'), findsOneWidget);
   });
 
   testWidgets('adeudos: total por cobrar y clientes del que más debe al que menos',
