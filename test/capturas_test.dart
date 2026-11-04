@@ -9,6 +9,7 @@ library;
 
 import 'dart:io';
 
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -164,6 +165,8 @@ final _adeudos = [
 ];
 
 List<Override> _datosSimulados() => [
+      // Base vacía: las pantallas leen los repositorios pero los datos vienen simulados.
+      databaseProvider.overrideWithValue(AppDatabase(NativeDatabase.memory())),
       resumenProvider.overrideWith((ref) => Stream.value(_resumen)),
       ultimoRespaldoProvider.overrideWith((ref) => Stream.value(null)),
       clientesProvider.overrideWith((ref, filtro) => Stream.value(_clientes
