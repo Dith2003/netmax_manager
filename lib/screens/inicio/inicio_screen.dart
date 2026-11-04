@@ -393,10 +393,9 @@ class _SelectorClienteState extends ConsumerState<_SelectorCliente> {
 // ---------------------------------------------------------------------------
 
 class _Variacion {
-  const _Variacion({required this.texto, this.sube = true, this.neutral = false});
+  const _Variacion({required this.texto, this.neutral = false});
 
   final String texto;
-  final bool sube;
 
   /// Dato de referencia, sin flecha de subida o bajada.
   final bool neutral;
@@ -496,13 +495,9 @@ class _Indicador extends StatelessWidget {
                 Row(
                   children: [
                     Icon(
-                      variacion!.neutral
-                          ? Icons.history
-                          : (variacion!.sube ? Icons.trending_up : Icons.trending_down),
+                      variacion!.neutral ? Icons.history : Icons.trending_up,
                       size: 16,
-                      color: variacion!.neutral
-                          ? scheme.onSurfaceVariant
-                          : (variacion!.sube ? ColoresNetMax.verde : scheme.error),
+                      color: variacion!.neutral ? scheme.onSurfaceVariant : ColoresNetMax.verde,
                     ),
                     const SizedBox(width: 4),
                     Expanded(
