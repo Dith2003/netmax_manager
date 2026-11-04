@@ -110,25 +110,25 @@ void main() {
   });
 
   group('PDF', () {
-    late Future<dynamic> tema;
-    setUpAll(() => tema = cargarTemaPdf());
+    late Future<EstiloPdf> estilo;
+    setUpAll(() => estilo = cargarEstiloPdf());
 
     bool esPdf(List<int> bytes) =>
         bytes.length > 1000 && String.fromCharCodes(bytes.take(5)) == '%PDF-';
 
     test('se generan los cuatro reportes, también vacíos', () async {
-      final t = await tema;
+      final t = await estilo;
       final generado = DateTime(2026, 11, 3);
       final meses = ingresosPorMes(
           [pago(DateTime(2026, 10, 2), 25000, MetodoPago.efectivo)], Mes(2026, 1), Mes(2026, 11));
 
       expect(esPdf(await pdfIngresos(
-          tema: t, meses: meses, periodo: 'Enero a noviembre 2026', generado: generado)), isTrue);
-      expect(esPdf(await pdfPagos(tema: t, pagos: [], periodo: 'Noviembre 2026', generado: generado)),
+          estilo: t, meses: meses, periodo: 'Enero a noviembre 2026', generado: generado)), isTrue);
+      expect(esPdf(await pdfPagos(estilo: t, pagos: [], periodo: 'Noviembre 2026', generado: generado)),
           isTrue);
       expect(
         esPdf(await pdfPagos(
-          tema: t,
+          estilo: t,
           pagos: [
             for (var i = 0; i < 80; i++) // varias páginas
               FilaPago(
@@ -146,7 +146,7 @@ void main() {
       );
       expect(
         esPdf(await pdfAdeudos(
-          tema: t,
+          estilo: t,
           adeudos: [
             AdeudoCliente(
               clienteId: 1,
@@ -161,7 +161,7 @@ void main() {
       );
       expect(
         esPdf(await pdfClientes(
-          tema: t,
+          estilo: t,
           clientes: [
             FilaCliente(
               nombre: 'Ana',

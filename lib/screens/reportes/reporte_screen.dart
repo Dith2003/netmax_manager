@@ -42,13 +42,13 @@ class _ReporteScreenState extends ConsumerState<ReporteScreen> {
       };
 
   Future<Uint8List> _generar(PdfPageFormat _) async {
-    final tema = await ref.read(temaPdfProvider.future);
+    final estilo = await ref.read(estiloPdfProvider.future);
     final repo = ref.read(reportesRepositoryProvider);
     switch (widget.tipo) {
       case TipoReporte.ingresos:
         final hasta = _anio == _hoy.year ? Mes.deFecha(_hoy) : Mes(_anio, 12);
         return pdfIngresos(
-          tema: tema,
+          estilo: estilo,
           meses: await repo.ingresos(Mes(_anio, 1), hasta),
           periodo: _anio == _hoy.year
               ? 'Enero a ${hasta.nombre}'
@@ -57,7 +57,7 @@ class _ReporteScreenState extends ConsumerState<ReporteScreen> {
         );
       case TipoReporte.pagos:
         return pdfPagos(
-          tema: tema,
+          estilo: estilo,
           pagos: await repo.pagosEntre(
             DateTime(_mes.anio, _mes.mes, 1),
             DateTime(_mes.anio, _mes.mes + 1, 0),
@@ -66,9 +66,9 @@ class _ReporteScreenState extends ConsumerState<ReporteScreen> {
           generado: _hoy,
         );
       case TipoReporte.adeudos:
-        return pdfAdeudos(tema: tema, adeudos: await repo.adeudos(_hoy), generado: _hoy);
+        return pdfAdeudos(estilo: estilo, adeudos: await repo.adeudos(_hoy), generado: _hoy);
       case TipoReporte.clientes:
-        return pdfClientes(tema: tema, clientes: await repo.clientes(_hoy), generado: _hoy);
+        return pdfClientes(estilo: estilo, clientes: await repo.clientes(_hoy), generado: _hoy);
     }
   }
 
@@ -77,7 +77,7 @@ class _ReporteScreenState extends ConsumerState<ReporteScreen> {
       case TipoReporte.ingresos:
         return DropdownButtonFormField<int>(
           initialValue: _anio,
-          decoration: const InputDecoration(labelText: 'Año', border: OutlineInputBorder()),
+          decoration: const InputDecoration(labelText: 'Año'),
           items: [
             for (var a = _hoy.year; a >= _hoy.year - 4; a--)
               DropdownMenuItem(value: a, child: Text('$a')),
@@ -94,7 +94,7 @@ class _ReporteScreenState extends ConsumerState<ReporteScreen> {
         }
         return DropdownButtonFormField<Mes>(
           initialValue: _mes,
-          decoration: const InputDecoration(labelText: 'Mes', border: OutlineInputBorder()),
+          decoration: const InputDecoration(labelText: 'Mes'),
           items: [
             for (final m in meses) DropdownMenuItem(value: m, child: Text(m.nombre)),
           ],

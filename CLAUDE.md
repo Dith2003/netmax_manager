@@ -23,7 +23,9 @@ Aplicación para administrar NetMAX, un negocio familiar de servicio de internet
 ```
 lib/
   core/          # dinero.dart (centavos), mes.dart (clase Mes 'YYYY-MM'), fechas.dart,
-                 # etiquetas.dart (textos en español de los enums)
+                 # etiquetas.dart (textos en español de los enums),
+                 # marca.dart (ColoresNetMax, DatosNegocio, ImagenesMarca, widget MarcaNetMax),
+                 # tema.dart (temaNetMax(): tema Material 3 con la identidad)
   domain/        # reglas puras sin BD: cobranza.dart (aplicarPago, calcularAdeudo, pagadoHasta),
                  # clientes.dart (búsqueda sin acentos, validaciones de formulario),
                  # vencimientos.dart (primer mes de cobro, mesesPorGenerar, estadoEnFecha),
@@ -38,8 +40,8 @@ lib/
                    # dashboard_repository.dart (resumen de inicio; se recalcula con consulta testigo)
                    # reportes_repository.dart (pagos de un periodo, ingresos, adeudos, clientes)
     respaldos/   # respaldo_service.dart (crear con VACUUM INTO, validar, reemplazar archivo)
-  reportes/      # pdf_reportes.dart: PDFs carta con encabezado/pie (pdf); fuente Open Sans en
-                 # assets/fonts (OFL) cargada con cargarTemaPdf()
+  reportes/      # pdf_reportes.dart: PDFs carta con encabezado de marca y pie con datos del
+                 # negocio; EstiloPdf (Outfit + logo) cargado con cargarEstiloPdf()
   providers/     # providers.dart: databaseProvider (se inyecta en main) y StreamProviders
   screens/       # una carpeta por módulo: clientes/ (lista, formulario, ficha, diálogos),
                  # estado_cuenta_screen.dart; pagos/ (registrar pago); adeudos/ (lista de adeudos);
@@ -53,6 +55,11 @@ lib/
                  # /respaldos (desde el botón de Inicio)
   main.dart      # AppRaiz: abre la BD y reconstruye toda la app (ProviderScope con key)
                  # al restaurar un respaldo (restaurarRespaldoProvider)
+assets/
+  fonts/         # Outfit (Regular/Medium/SemiBold/Bold, OFL) para la app y los PDF
+  marca/         # logo.svg/png (fondo claro) y logo_claro.svg/png (fondo azul)
+test/
+  capturas_test.dart  # capturas de pantalla con datos simulados (solo con CAPTURAS=1)
 docs/
   schema.sql     # referencia original; la fuente de verdad es lib/data/db/database.dart
 ```
@@ -128,7 +135,23 @@ docs/
   tono claro del mismo color (`primary` sobre `primaryContainer`).
 - Historial y fechas automáticas: guardar `DateTime.now()` explícito (no `currentDateAndTime`, que es UTC).
 - PDF: `pdf` + `printing` (`PdfPreview` no se puede probar en widget tests: probar la generación
-  de bytes con `cargarTemaPdf()` tras `TestWidgetsFlutterBinding.ensureInitialized()`).
+  de bytes con `cargarEstiloPdf()` tras `TestWidgetsFlutterBinding.ensureInitialized()`).
+
+## Identidad visual (NET_MAX)
+- Nombre visible: **NET_MAX** (nunca "NetMAX"). Lema: "Contigo más lejos, siempre con **Fe**".
+- Colores (`ColoresNetMax`): azul `#13294B` (NET, textos, barras), verde `#0B7A54` (MAX, botones,
+  acentos sobre claro), verde claro `#3FC48D` (acentos sobre azul), crema `#F4EDE1` (fondo),
+  arena `#DCD5C8`, línea `#C7C6C3`, tarjeta `#FFFBF5`.
+- Tipografía: **Outfit** en toda la app (`fontFamily: 'Outfit'`) y en los PDF.
+- Tema (`temaNetMax()`): barra superior y de navegación azules con texto crema y selección verde
+  claro; FAB y botones principales verdes; tarjetas planas redondeadas (16) con borde suave;
+  campos blancos redondeados (12). No fijar `border:` en `InputDecoration` (lo da el tema).
+- Logo: torre con señal sobre colina (`assets/marca`). Los íconos de la app (Android adaptable,
+  Windows .ico) y la pantalla de arranque de Android se generaron desde `logo_claro.svg` sobre azul.
+- Datos del negocio (`DatosNegocio`): tel. 771 196 3767, net_max@gmail.com,
+  Santa Cruz, Nicolás Flores, Hgo. C.P. 42364 (pie de los PDF).
+- Revisión visual: el CI genera capturas (`test/capturas_test.dart`) y PDFs de ejemplo y los
+  imprime en el log (tar.gz en base64 entre `INICIO_CAPTURAS`/`FIN_CAPTURAS`) para revisarlos.
 
 ## Flujo de trabajo
 - Cada sprint en una rama (`sprint-N/nombre`) con Pull Request hacia `main`. La dueña revisa,
@@ -147,6 +170,9 @@ docs/
 - [x] Sprint 7: Respaldos (crear, compartir/guardar, restaurar, recordatorio)
 
 **Versión 1.0 completa.**
+
+## Transformación (antes de la versión instalable)
+- [x] Identidad visual NET_MAX (colores, tipografía, logo, íconos, PDF)
 
 ## Futuro (no hacer todavía)
 Sincronización entre dispositivos, recordatorios por WhatsApp, mapa/GPS de clientes,

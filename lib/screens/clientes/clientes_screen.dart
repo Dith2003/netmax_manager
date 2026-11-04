@@ -50,7 +50,6 @@ class _ClientesScreenState extends ConsumerState<ClientesScreen> {
               decoration: InputDecoration(
                 prefixIcon: const Icon(Icons.search),
                 hintText: 'Buscar por nombre, teléfono, zona o dirección',
-                border: const OutlineInputBorder(),
                 suffixIcon: _busqueda.isEmpty
                     ? null
                     : IconButton(

@@ -71,9 +71,21 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # Fuente para los reportes PDF (Open Sans, licencia OFL: assets/fonts/OFL.txt).
+  # Identidad NET_MAX: logo y tipografía Outfit (licencia OFL: assets/fonts/OFL-Outfit.txt).
   assets:
     - assets/fonts/
+    - assets/marca/
+
+  fonts:
+    - family: Outfit
+      fonts:
+        - asset: assets/fonts/Outfit-Regular.ttf
+        - asset: assets/fonts/Outfit-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Outfit-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Outfit-Bold.ttf
+          weight: 700
 
   # To add assets to your application, add an assets section, like this:
   # assets:

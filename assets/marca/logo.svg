@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 124" width="140" height="124">
+  <!-- Logo NET_MAX: torre con señal sobre una colina. -->
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="6.5">
+    <path d="M55.14,16.62 A20,20 0 0 0 55.14,43.38" stroke="#0B7A54"/>
+    <path d="M84.86,16.62 A20,20 0 0 1 84.86,43.38" stroke="#0B7A54"/>
+    <path d="M46.22,8.59 A32,32 0 0 0 46.22,51.41" stroke="#0B7A54"/>
+    <path d="M93.78,8.59 A32,32 0 0 1 93.78,51.41" stroke="#0B7A54"/>
+    <path d="M5,118 Q70,96 135,118" stroke="#0B7A54"/>
+    <path d="M70,32 L51,107 M70,32 L89,107" stroke="#13294B"/>
+    <path d="M61,77 L79,77" stroke="#13294B" stroke-width="5.5"/>
+  </g>
+  <circle cx="70" cy="30" r="6.5" fill="#13294B"/>
+</svg>

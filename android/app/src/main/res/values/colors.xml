@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Colores de la marca NET_MAX -->
+    <color name="netmax_azul">#13294B</color>
+    <color name="netmax_crema">#F4EDE1</color>
+</resources>

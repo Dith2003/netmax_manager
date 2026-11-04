@@ -30,7 +30,6 @@ class _CampoFecha extends StatelessWidget {
       child: InputDecorator(
         decoration: InputDecoration(
           labelText: etiqueta,
-          border: const OutlineInputBorder(),
           suffixIcon: const Icon(Icons.calendar_today),
         ),
         child: Text(formatoFecha(fecha)),
@@ -109,7 +108,6 @@ class _DialogoInstalacionState extends State<_DialogoInstalacion> {
                   decoration: const InputDecoration(
                     labelText: 'Costo de instalación',
                     prefixText: '\$ ',
-                    border: OutlineInputBorder(),
                   ),
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   validator: validarMontoOpcional,
@@ -125,7 +123,6 @@ class _DialogoInstalacionState extends State<_DialogoInstalacion> {
                   controller: _tecnico,
                   decoration: const InputDecoration(
                     labelText: 'Técnico',
-                    border: OutlineInputBorder(),
                   ),
                 ),
                 espacio,
@@ -133,7 +130,6 @@ class _DialogoInstalacionState extends State<_DialogoInstalacion> {
                   controller: _notas,
                   decoration: const InputDecoration(
                     labelText: 'Notas',
-                    border: OutlineInputBorder(),
                   ),
                   maxLines: 2,
                 ),
@@ -227,7 +223,6 @@ class _DialogoEquipoState extends State<_DialogoEquipo> {
                   decoration: const InputDecoration(
                     labelText: 'Tipo de equipo *',
                     helperText: 'Antena, router, cable…',
-                    border: OutlineInputBorder(),
                   ),
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Escribe el tipo de equipo' : null,
@@ -237,7 +232,6 @@ class _DialogoEquipoState extends State<_DialogoEquipo> {
                   initialValue: _propiedad,
                   decoration: const InputDecoration(
                     labelText: '¿De quién es? *',
-                    border: OutlineInputBorder(),
                   ),
                   items: [
                     for (final p in PropiedadEquipo.values)
@@ -252,7 +246,6 @@ class _DialogoEquipoState extends State<_DialogoEquipo> {
                   controller: _marcaModelo,
                   decoration: const InputDecoration(
                     labelText: 'Marca y modelo',
-                    border: OutlineInputBorder(),
                   ),
                 ),
                 espacio,
@@ -260,7 +253,6 @@ class _DialogoEquipoState extends State<_DialogoEquipo> {
                   controller: _serie,
                   decoration: const InputDecoration(
                     labelText: 'Número de serie',
-                    border: OutlineInputBorder(),
                   ),
                 ),
                 espacio,
@@ -269,7 +261,6 @@ class _DialogoEquipoState extends State<_DialogoEquipo> {
                   decoration: const InputDecoration(
                     labelText: 'Costo',
                     prefixText: '\$ ',
-                    border: OutlineInputBorder(),
                   ),
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   validator: validarMontoOpcional,
@@ -285,7 +276,6 @@ class _DialogoEquipoState extends State<_DialogoEquipo> {
                   controller: _notas,
                   decoration: const InputDecoration(
                     labelText: 'Notas',
-                    border: OutlineInputBorder(),
                   ),
                   maxLines: 2,
                 ),
@@ -336,7 +326,6 @@ Future<String?> confirmarCambioEstado(
             controller: motivo,
             decoration: const InputDecoration(
               labelText: 'Motivo (opcional)',
-              border: OutlineInputBorder(),
             ),
           ),
         ],
@@ -376,7 +365,6 @@ Future<String?> confirmarCancelarPago(BuildContext context, {required String mon
             controller: motivo,
             decoration: const InputDecoration(
               labelText: 'Motivo (opcional)',
-              border: OutlineInputBorder(),
             ),
           ),
         ],
@@ -472,7 +460,6 @@ class _DialogoCargoState extends State<_DialogoCargo> {
                   decoration: const InputDecoration(
                     labelText: 'Concepto *',
                     helperText: 'Ej. Antena no devuelta, reconexión…',
-                    border: OutlineInputBorder(),
                   ),
                   textCapitalization: TextCapitalization.sentences,
                   validator: (v) =>
@@ -484,7 +471,6 @@ class _DialogoCargoState extends State<_DialogoCargo> {
                   decoration: const InputDecoration(
                     labelText: 'Monto *',
                     prefixText: '\$ ',
-                    border: OutlineInputBorder(),
                   ),
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   validator: validarMontoObligatorio,
@@ -500,7 +486,6 @@ class _DialogoCargoState extends State<_DialogoCargo> {
                   controller: _notas,
                   decoration: const InputDecoration(
                     labelText: 'Notas',
-                    border: OutlineInputBorder(),
                   ),
                   maxLines: 2,
                 ),

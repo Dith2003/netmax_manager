@@ -183,7 +183,7 @@ class _Dato extends StatelessWidget {
   }
 }
 
-/// Aviso si el cliente tiene equipo prestado y no hay equipo de NetMAX registrado.
+/// Aviso si el cliente tiene equipo prestado y no hay equipo de NET_MAX registrado.
 class _AvisoEquipoPrestado extends ConsumerWidget {
   const _AvisoEquipoPrestado({required this.cliente});
 
@@ -209,7 +209,7 @@ class _AvisoEquipoPrestado extends ConsumerWidget {
     return MaterialBanner(
       leading: const Icon(Icons.warning_amber),
       content: const Text(
-        'Este cliente tiene equipo prestado, pero no hay equipo de NetMAX registrado. '
+        'Este cliente tiene equipo prestado, pero no hay equipo de NET_MAX registrado. '
         'Regístralo para poder recuperarlo si cancela.',
       ),
       actions: [
@@ -389,7 +389,7 @@ class _SeccionEquipos extends ConsumerWidget {
 
   final Cliente cliente;
 
-  /// Registra un cargo extra por un equipo de NetMAX que el cliente no devolvió.
+  /// Registra un cargo extra por un equipo de NET_MAX que el cliente no devolvió.
   Future<void> _cobrarNoDevuelto(BuildContext context, WidgetRef ref, Equipo e) async {
     final datos = await mostrarDialogoCargo(
       context,
