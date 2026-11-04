@@ -232,7 +232,9 @@ docs/
 - Datos del negocio (`DatosNegocio`): tel. 771 196 3767, net_max@gmail.com,
   Santa Cruz, Nicolás Flores, Hgo. C.P. 42364 (pie de los PDF).
 - Revisión visual: el CI genera capturas (`test/capturas_test.dart`) y PDFs de ejemplo y los
-  imprime en el log (tar.gz en base64 entre `INICIO_CAPTURAS`/`FIN_CAPTURAS`) para revisarlos.
+  imprime en el log entre `INICIO_CAPTURAS`/`FIN_CAPTURAS`, una línea `ARCHIVO <ruta> <base64>`
+  por imagen (un solo base64 grande se corrompía: GitHub enmascara fragmentos con `***`).
+  También se suben como artefacto `capturas` (para descargarlas desde GitHub).
 
 ## Flujo de trabajo
 - Cada sprint en una rama (`sprint-N/nombre`) con Pull Request hacia `main`. La dueña revisa,
