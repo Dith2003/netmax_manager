@@ -37,7 +37,7 @@ class ComprobanteScreen extends ConsumerWidget {
       appBar: AppBar(title: Text('Comprobante N° ${numeroComprobante(pagoId)}')),
       body: PdfPreview(
         build: generar,
-        initialPageFormat: const PdfPageFormat(5.5 * PdfPageFormat.inch, 8.5 * PdfPageFormat.inch),
+        initialPageFormat: formatoComprobante,
         canChangePageFormat: false,
         canChangeOrientation: false,
         canDebug: false,

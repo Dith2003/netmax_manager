@@ -10,6 +10,7 @@ import '../../domain/clientes.dart';
 import '../../domain/cobranza.dart';
 import '../../providers/providers.dart';
 import '../../widgets/comunes.dart';
+import '../../widgets/disposicion.dart';
 
 /// Registrar un pago de un cliente, con vista previa de cómo se reparte.
 class RegistrarPagoScreen extends ConsumerWidget {
@@ -179,56 +180,81 @@ class _FormularioPagoState extends ConsumerState<_FormularioPago> {
             cliente: c, periodos: widget.periodos, cargos: widget.cargos, monto: monto);
     final excede = reparto != null && reparto.sobrante > 0;
     final cancelado = c.estado == EstadoCliente.cancelado;
-    const espacio = SizedBox(height: 16);
+    final scheme = Theme.of(context).colorScheme;
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        // Resumen del cliente
-        Card(
-          child: ListTile(
-            title: Text(c.nombre),
-            subtitle: Text(
-              '${formatoDinero(c.precioMensual)} al mes · vence el día ${c.diaCorte}\n'
-              '${hasta == null ? 'Sin meses pagados' : 'Pagado hasta ${hasta.nombre}'}',
-            ),
-            isThreeLine: true,
-            trailing: adeudo.tieneAdeudo
-                ? Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text('Debe', style: Theme.of(context).textTheme.labelSmall),
-                      Text(
-                        formatoDinero(adeudo.total),
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  )
-                : const Text('Al corriente'),
-          ),
+    final resumenCliente = Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        leading: CircleAvatar(
+          backgroundColor: scheme.secondaryContainer,
+          child: Text(c.nombre.isEmpty ? '?' : c.nombre[0].toUpperCase(),
+              style: TextStyle(color: scheme.onSecondaryContainer)),
         ),
+        title: Text(c.nombre, style: Theme.of(context).textTheme.titleMedium),
+        subtitle: Text(
+          '${formatoDinero(c.precioMensual)} al mes · vence el día ${c.diaCorte}\n'
+          '${hasta == null ? 'Sin meses pagados' : 'Pagado hasta ${hasta.nombre}'}',
+        ),
+        isThreeLine: true,
+        trailing: adeudo.tieneAdeudo
+            ? Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('Debe', style: Theme.of(context).textTheme.labelSmall),
+                  Text(
+                    formatoDinero(adeudo.total),
+                    style: TextStyle(color: scheme.error, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              )
+            : const Text('Al corriente'),
+      ),
+    );
+
+    final campoFecha = InkWell(
+      onTap: _elegirFecha,
+      borderRadius: BorderRadius.circular(12),
+      child: InputDecorator(
+        decoration: const InputDecoration(
+          labelText: 'Fecha de pago',
+          suffixIcon: Icon(Icons.calendar_today),
+        ),
+        child: Text(formatoFecha(_fecha)),
+      ),
+    );
+    final campoMetodo = DropdownButtonFormField<MetodoPago>(
+      initialValue: _metodo,
+      isExpanded: true,
+      decoration: const InputDecoration(labelText: 'Método'),
+      items: [
+        for (final m in MetodoPago.values) DropdownMenuItem(value: m, child: Text(m.etiqueta)),
+      ],
+      onChanged: (m) {
+        if (m != null) setState(() => _metodo = m);
+      },
+    );
+
+    final datosPago = SeccionFormulario(
+      titulo: 'Datos del pago',
+      icono: Icons.payments_outlined,
+      children: [
         if (cancelado)
-          const Padding(
-            padding: EdgeInsets.only(top: 12),
-            child: Text('El cliente está cancelado. Reactívalo para registrar pagos.'),
-          ),
-        espacio,
+          Text('El cliente está cancelado. Reactívalo para registrar pagos.',
+              style: TextStyle(color: scheme.error)),
         TextFormField(
           controller: _monto,
           decoration: const InputDecoration(
             labelText: 'Monto recibido *',
             prefixText: '\$ ',
           ),
+          style: Theme.of(context).textTheme.titleLarge,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           autovalidateMode: AutovalidateMode.onUserInteraction,
           validator: validarMontoObligatorio,
           onChanged: (_) => setState(() {}),
         ),
-        const SizedBox(height: 8),
         Wrap(
           spacing: 8,
           runSpacing: 4,
@@ -245,68 +271,33 @@ class _FormularioPagoState extends ConsumerState<_FormularioPago> {
               ),
           ],
         ),
-        espacio,
-        Row(
-          children: [
-            Expanded(
-              child: InkWell(
-                onTap: _elegirFecha,
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'Fecha de pago',
-                    suffixIcon: Icon(Icons.calendar_today),
-                  ),
-                  child: Text(formatoFecha(_fecha)),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: DropdownButtonFormField<MetodoPago>(
-                initialValue: _metodo,
-                decoration: const InputDecoration(
-                  labelText: 'Método',
-                ),
-                items: [
-                  for (final m in MetodoPago.values)
-                    DropdownMenuItem(value: m, child: Text(m.etiqueta)),
-                ],
-                onChanged: (m) {
-                  if (m != null) setState(() => _metodo = m);
-                },
-              ),
-            ),
-          ],
-        ),
-        espacio,
+        FilaCampos(izquierda: campoFecha, derecha: campoMetodo),
         TextField(
           controller: _folio,
-          decoration: const InputDecoration(
-            labelText: 'Folio o referencia (opcional)',
-          ),
+          decoration: const InputDecoration(labelText: 'Folio o referencia (opcional)'),
         ),
-        espacio,
         TextField(
           controller: _notas,
-          decoration: const InputDecoration(
-            labelText: 'Notas (opcional)',
-          ),
+          decoration: const InputDecoration(labelText: 'Notas (opcional)'),
           maxLines: 2,
         ),
-        const SizedBox(height: 24),
-        Text('Así se aplicará el pago', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
+      ],
+    );
+
+    final aplicacion = SeccionFormulario(
+      titulo: 'Así se aplicará el pago',
+      icono: Icons.fact_check_outlined,
+      children: [
         if (reparto == null)
           const Text('Escribe un monto válido para ver el reparto.')
         else if (excede)
           Text(
             'El monto cubre más de ${PagosRepository.maxMesesAdelantados} meses '
             'adelantados. Revisa la cantidad.',
-            style: TextStyle(color: Theme.of(context).colorScheme.error),
+            style: TextStyle(color: scheme.error),
           )
         else
           _VistaPrevia(reparto),
-        const SizedBox(height: 24),
         FilledButton.icon(
           onPressed: (reparto == null || excede || cancelado || _guardando)
               ? null
@@ -319,6 +310,37 @@ class _FormularioPagoState extends ConsumerState<_FormularioPago> {
         ),
       ],
     );
+
+    return LayoutBuilder(builder: (context, limites) {
+      // En pantallas anchas: datos a la izquierda y el reparto a la derecha.
+      if (limites.maxWidth >= 900) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ContenidoCentrado(
+            anchoMaximo: 1100,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 3, child: Column(children: [resumenCliente, datosPago])),
+                const SizedBox(width: 16),
+                Expanded(flex: 2, child: aplicacion),
+              ],
+            ),
+          ),
+        );
+      }
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          ContenidoCentrado(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [resumenCliente, datosPago, aplicacion],
+            ),
+          ),
+        ],
+      );
+    });
   }
 }
 
@@ -330,6 +352,8 @@ class _VistaPrevia extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      margin: EdgeInsets.zero,
+      color: Theme.of(context).colorScheme.surfaceContainerLowest,
       child: Column(
         children: [
           for (final c in reparto.aplicacionesCargos)

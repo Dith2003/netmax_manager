@@ -184,5 +184,6 @@ void main() {
     for (final t in TipoReporte.values) {
       expect(find.text(t.titulo), findsOneWidget);
     }
+    expect(find.text('Comprobantes de pago'), findsOneWidget);
   });
 }

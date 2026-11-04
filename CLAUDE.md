@@ -44,8 +44,10 @@ lib/
     respaldos/   # respaldo_service.dart (crear con VACUUM INTO, validar, reemplazar archivo)
   reportes/      # pdf_reportes.dart: PDFs carta con encabezado de marca y pie con datos del
                  # negocio; EstiloPdf (Outfit + logo) cargado con cargarEstiloPdf();
-                 # pdfComprobante (media carta, marca de agua si el pago está cancelado)
-  providers/     # providers.dart: databaseProvider (se inyecta en main) y StreamProviders
+                 # pdfComprobante (tipo cheque: 1/3 de hoja carta, `formatoComprobante`, talón
+                 # a la izquierda, sello si el pago está cancelado)
+  providers/     # providers.dart: databaseProvider (se inyecta en main) y StreamProviders;
+                 # zoom.dart (zoomProvider, niveles 80–150 %, guardado en configuraciones.zoom)
   screens/       # una carpeta por módulo: clientes/ (lista, formulario, ficha, diálogos,
                  # modales.dart: alta/edición/ficha en ventana modal con navegación propia),
                  # estado_cuenta_screen.dart; pagos/ (registrar pago, comprobante_screen);
@@ -54,13 +56,17 @@ lib/
                  # reportes/ (lista, vista previa PdfPreview y comprobantes_screen por mes);
                  # respaldos/ (crear: Windows guardar como / Android compartir; restaurar)
   widgets/       # comunes.dart (EstadoChip, ErrorVista, SeccionTitulo, mostrarMensaje)
-  routes/        # app_router.dart (go_router, ShellRoute con barra Inicio/Clientes/Adeudos/Reportes):
+                 # disposicion.dart (esEscritorio, ContenidoCentrado, EncabezadoSeccion,
+                 #   SeccionFormulario, FilaCampos); panel_lateral.dart (navegación de escritorio)
+  routes/        # app_router.dart (go_router, ShellRoute: panel lateral si ancho ≥ 900, barra
+                 # inferior si no; Inicio/Clientes/Adeudos/Reportes + Respaldos abajo del panel):
                  # /inicio (arranque), /clientes, /clientes/nuevo, /clientes/:id,
                  # /clientes/:id/{editar,pago,estado-cuenta}, /adeudos, /reportes,
                  # /reportes/comprobantes, /reportes/:tipo,
-                 # /respaldos (desde el botón de Inicio)
+                 # /respaldos (Inicio y panel lateral)
   main.dart      # AppRaiz: abre la BD y reconstruye toda la app (ProviderScope con key)
-                 # al restaurar un respaldo (restaurarRespaldoProvider)
+                 # al restaurar un respaldo (restaurarRespaldoProvider); _ConZoom escala
+                 # toda la interfaz (Ctrl + / Ctrl − / Ctrl 0)
 assets/
   fonts/         # Outfit (Regular/Medium/SemiBold/Bold, OFL) para la app y los PDF
   marca/         # logo.svg/png (fondo claro) y logo_claro.svg/png (fondo azul)
@@ -155,6 +161,18 @@ docs/
   si no. Dentro del modal se navega con `Navigator.of(context).push(MaterialPageRoute)` (no go_router)
   y se cierra con `cerrarModal(context, valor)`; los mensajes que deben verse al cerrar, con
   `mensajeFueraDelModal`. Las rutas `/clientes/:id/...` siguen existiendo como páginas.
+- **Escritorio** (ancho ≥ 900, `esEscritorio`): panel lateral azul (extendido ≥ 1180, compacto
+  si no) con zoom abajo; las pantallas principales no usan AppBar, sino `EncabezadoSeccion`
+  (título, descripción, ícono y acciones). Contenido con ancho máximo (`ContenidoCentrado`:
+  listas 1240, formularios 760, ficha 960); formularios en tarjetas `SeccionFormulario` con
+  `FilaCampos` (dos columnas si caben) y barra de acciones fija abajo. Registrar pago: dos
+  columnas (datos | vista previa) si hay ≥ 900 de ancho.
+- **Zoom**: transforma toda la app (MediaQuery dividido entre el zoom + Transform.scale); se guarda
+  por equipo en `configuraciones` (clave `zoom`).
+- **Comprobante tipo cheque**: `conceptosCompactos` agrupa meses consecutivos ("Mensualidades
+  sep 2026 – abr 2027 (8)") y junta lo que pase de 4 líneas en "Otros N conceptos".
+- **Reportes**: tarjetas agrupadas (Cobranza; Clientes y cartera); en escritorio la vista previa
+  tiene panel de opciones a la izquierda.
 - Gráficas: `fl_chart`. Colores de serie validados con la skill de visualización (incluido
   daltonismo): altas `#0B7A54`, suspensiones `#C97A00`, cancelaciones `#7A5BD6`; leyenda con
   totales, tooltip al pasar el mouse, una sola escala por gráfica.
@@ -197,6 +215,8 @@ docs/
 - [x] Identidad visual NET_MAX (colores, tipografía, logo, íconos, PDF)
 - [x] Inicio interactivo con gráficas (cobranza y actividad de clientes), comprobantes de pago,
       cliente en ventanas modales
+- [x] Escritorio: panel lateral, zoom, formularios con ancho limitado, comprobante tipo cheque
+      (1/3 de hoja), encabezados de sección y nueva pantalla de Reportes
 
 ## Futuro (no hacer todavía)
 Sincronización entre dispositivos, recordatorios por WhatsApp, mapa/GPS de clientes,

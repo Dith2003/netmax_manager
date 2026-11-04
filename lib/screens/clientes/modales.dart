@@ -20,7 +20,14 @@ const anchoModalFlotante = 720.0;
 
 /// Abre [contenido] en un modal con navegación propia y devuelve el valor con
 /// que se cierre (`cerrarModal(context, valor)`).
-Future<T?> mostrarModal<T>(BuildContext context, WidgetBuilder contenido) {
+///
+/// [anchoMaximo]: los formularios usan una ventana más angosta que la ficha.
+Future<T?> mostrarModal<T>(
+  BuildContext context,
+  WidgetBuilder contenido, {
+  double anchoMaximo = 960,
+  double altoMaximo = 940,
+}) {
   final tamano = MediaQuery.sizeOf(context);
   final flotante = tamano.width >= anchoModalFlotante;
 
@@ -40,8 +47,8 @@ Future<T?> mostrarModal<T>(BuildContext context, WidgetBuilder contenido) {
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: SizedBox(
-          width: math.min(tamano.width * 0.92, 920),
-          height: math.min(tamano.height * 0.92, 940),
+          width: math.min(tamano.width * 0.92, anchoMaximo),
+          height: math.min(tamano.height * 0.92, altoMaximo),
           child: cuerpo,
         ),
       );
@@ -76,6 +83,8 @@ Future<int?> abrirFormularioCliente(BuildContext context, {int? clienteId}) {
   return mostrarModal<int>(
     context,
     (_) => ClienteFormScreen(clienteId: clienteId, enModal: true),
+    anchoMaximo: 820,
+    altoMaximo: 860,
   );
 }
 

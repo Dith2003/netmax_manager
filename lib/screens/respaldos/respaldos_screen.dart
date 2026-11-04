@@ -10,6 +10,7 @@ import '../../core/fechas.dart';
 import '../../data/respaldos/respaldo_service.dart';
 import '../../providers/providers.dart';
 import '../../widgets/comunes.dart';
+import '../../widgets/disposicion.dart';
 
 const _tipoRespaldo = XTypeGroup(label: 'Respaldo de NET_MAX', extensions: ['db']);
 
@@ -146,12 +147,23 @@ class _RespaldosScreenState extends ConsumerState<RespaldosScreen> {
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Respaldos')),
-      body: AbsorbPointer(
+      appBar: esEscritorio(context) ? null : AppBar(title: const Text('Respaldos')),
+      body: ContenidoCentrado(
+        anchoMaximo: 760,
+        child: AbsorbPointer(
         absorbing: _trabajando,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            if (esEscritorio(context))
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: EncabezadoSeccion(
+                  titulo: 'Respaldos',
+                  descripcion: 'Guarda y recupera toda la información de la app',
+                  icono: Icons.backup,
+                ),
+              ),
             if (_trabajando) const LinearProgressIndicator(),
             Card(margin: EdgeInsets.zero, child: estado),
             const SizedBox(height: 16),
@@ -182,6 +194,7 @@ class _RespaldosScreenState extends ConsumerState<RespaldosScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

@@ -6,6 +6,7 @@ import '../../core/fechas.dart';
 import '../../data/db/enums.dart';
 import '../../providers/providers.dart';
 import '../../widgets/comunes.dart';
+import '../../widgets/disposicion.dart';
 import '../clientes/modales.dart';
 
 /// Clientes con meses vencidos sin pagar, del que más debe al que menos.
@@ -34,9 +35,9 @@ class _AdeudosScreenState extends ConsumerState<AdeudosScreen> {
   Widget build(BuildContext context) {
     final adeudos = ref.watch(adeudosProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Adeudos')),
-      body: adeudos.when(
+    final escritorio = esEscritorio(context);
+
+    final contenido = adeudos.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => ErrorVista(e),
         data: (lista) {
@@ -98,6 +99,23 @@ class _AdeudosScreenState extends ConsumerState<AdeudosScreen> {
             },
           );
         },
+      );
+
+    return Scaffold(
+      appBar: escritorio ? null : AppBar(title: const Text('Adeudos')),
+      body: ContenidoCentrado(
+        anchoMaximo: 1240,
+        child: Column(
+          children: [
+            if (escritorio)
+              const EncabezadoSeccion(
+                titulo: 'Adeudos',
+                descripcion: 'Clientes con mensualidades vencidas o cargos sin pagar',
+                icono: Icons.money_off,
+              ),
+            Expanded(child: contenido),
+          ],
+        ),
       ),
     );
   }
