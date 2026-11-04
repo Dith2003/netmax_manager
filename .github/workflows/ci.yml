@@ -56,10 +56,11 @@ jobs:
           flutter test test/capturas_test.dart --update-goldens || echo 'Alguna captura falló'
           sudo apt-get install -y -qq poppler-utils > /dev/null
           for f in build/capturas/*.pdf; do pdftoppm -png -r 100 -f 1 -l 1 "$f" "${f%.pdf}"; done
-          tar czf /tmp/capturas.tgz $(ls test/capturas/*.png build/capturas/*.png 2>/dev/null)
+          # Una línea por imagen (si GitHub enmascara un fragmento, solo se pierde esa).
           echo "INICIO_CAPTURAS"
-          base64 -w0 /tmp/capturas.tgz
-          echo
+          for f in test/capturas/*.png build/capturas/*.png; do
+            [ -f "$f" ] && echo "ARCHIVO $f $(base64 -w0 "$f")"
+          done
           echo "FIN_CAPTURAS"
 
       - name: Subir capturas como artefacto
