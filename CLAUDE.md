@@ -31,7 +31,8 @@ lib/
     db/          # database.dart (tablas drift + AppDatabase), enums.dart
     repositories/  # clientes_repository.dart (clientes, estados, instalaciones, equipos)
                    # pagos_repository.dart (saldos por mes, registrar/cancelar pago, historial)
-                   # vencimientos_repository.dart (generar meses, cortesía, agregar/quitar mes, adeudos)
+                   # vencimientos_repository.dart (generar meses, cortesía, agregar/quitar mes,
+                   #   cargos extra, adeudos)
   providers/     # providers.dart: databaseProvider (se inyecta en main) y StreamProviders
   screens/       # una carpeta por módulo: clientes/ (lista, formulario, ficha, diálogos),
                  # estado_cuenta_screen.dart; pagos/ (registrar pago); adeudos/ (lista de adeudos)
@@ -68,6 +69,11 @@ docs/
 11. **Cortesía** se marca a mano por mes (no si el mes tiene pagos vigentes). Se puede **agregar
    un mes a mano** (cobro manual, p. ej. a un suspendido) y **quitar un mes** que nunca tuvo pagos.
    Si el primer mes de cobro se mueve a después, se quitan los meses anteriores sin pagos.
+12. **Cargos extra** (tabla `cargos`, aplicados en `cargo_aplicaciones`): concepto + monto libre
+   (p. ej. equipo de NetMAX no devuelto, reconexión). Se deben desde su fecha y forman parte del
+   adeudo. Los pagos cubren meses y cargos juntos en orden de fecha (vencimiento del mes o fecha
+   del cargo; con la misma fecha va primero el mes). Un cargo se cancela (no se borra) y solo si
+   no tiene pagos vigentes.
 
 ## Convenciones
 - Código y nombres de tablas en español sin acentos (`clientes`, `fecha_pago`).
@@ -78,7 +84,7 @@ docs/
 - Clase de datos de `periodos` = `PeriodoRow` (para no chocar con la clase de dominio).
 - Tras cambiar tablas: `dart run build_runner build --delete-conflicting-outputs`
   y subir `schemaVersion` con su migración (+ prueba en `test/migracion_test.dart`).
-  Versión actual del esquema: **2**. Como Claude no puede correr build_runner, el CI imprime
+  Versión actual del esquema: **3**. Como Claude no puede correr build_runner, el CI imprime
   `database.g.dart` regenerado (gzip+base64, entre `INICIO_BASE64`/`FIN_BASE64`) si está
   desactualizado: se decodifica del log y se sube.
 - Toda lógica de cálculo (vencimientos, adeudos) va en repositorios/servicios con
@@ -102,6 +108,7 @@ docs/
 - [x] Sprint 2: Clientes (+ instalaciones y equipos, historial de estados)
 - [x] Sprint 3: Pagos (reparto automático con vista previa, abonos, adelantos, cancelación)
 - [x] Sprint 4: Vencimientos y adeudos (primer mes configurable, generación, cortesía, estado de cuenta)
+- [x] Sprint 4b: Cargos extra (equipo no devuelto, reconexión, etc.)
 - [ ] Sprint 5: Dashboard
 - [ ] Sprint 6: Reportes
 - [ ] Sprint 7: Respaldos (exportar/importar archivo .db)
