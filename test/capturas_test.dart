@@ -451,8 +451,11 @@ void main() {
       skip: !_activo);
   testWidgets('captura 32_usuario_permisos',
       (tester) => _capturar(tester, '32_usuario_permisos', '/configuracion',
-          tamano: const Size(1366, 1100), despues: (tester) async {
-        await tester.tap(find.byTooltip('Editar permisos o cambiar PIN').last);
+          tamano: const Size(1366, 1300), despues: (tester) async {
+        final boton = find.byTooltip('Editar permisos o cambiar PIN').last;
+        await tester.ensureVisible(boton);
+        await tester.pumpAndSettle();
+        await tester.tap(boton);
         await tester.pumpAndSettle();
       }),
       skip: !_activo);
