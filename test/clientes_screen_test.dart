@@ -40,7 +40,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    expect(find.text('Clientes'), findsOneWidget);
+    expect(find.widgetWithText(AppBar, 'Clientes'), findsOneWidget);
     expect(find.text('2 clientes'), findsOneWidget);
     expect(find.text('Ana López'), findsOneWidget);
     expect(find.text(r'$250.00'), findsNWidgets(2));

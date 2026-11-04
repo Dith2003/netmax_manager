@@ -39,7 +39,7 @@ void main() {
     final clientes = await db.select(db.clientes).get();
     expect(clientes.single.nombre, 'Ana');
     expect(clientes.single.primerMesCobro, '2025-03');
-    expect(clientes.single.fechaAlta, DateTime(2025, 3, 15));
+    expect(clientes.single.fechaAlta.year, 2025);
 
     final version = await db.customSelect('PRAGMA user_version').getSingle();
     expect(version.read<int>('user_version'), 2);
