@@ -14,6 +14,7 @@ import '../../widgets/disposicion.dart';
 import '../pagos/comprobante_screen.dart';
 import 'dialogos.dart';
 import 'estado_cuenta_screen.dart';
+import 'acciones_cliente.dart';
 import 'modales.dart';
 
 /// Ficha del cliente: datos, estado, instalaciones, equipos e historial.
@@ -71,22 +72,9 @@ class _Ficha extends ConsumerWidget {
   final Cliente cliente;
   final bool enModal;
 
-  Future<void> _cambiarEstado(BuildContext context, WidgetRef ref, EstadoCliente nuevo) async {
-    final motivo = await confirmarCambioEstado(
-      context,
-      nombreCliente: cliente.nombre,
-      nuevo: nuevo,
-    );
-    if (motivo == null) return;
-    await ref
-        .read(clientesRepositoryProvider)
-        .cambiarEstado(cliente.id, nuevo, motivo: motivo.isEmpty ? null : motivo);
-    if (context.mounted) mostrarMensaje(context, 'Estado: ${nuevo.etiqueta}');
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final planes = ref.watch(planesProvider);
+    final planes = ref.watch(todosLosPlanesProvider);
     final nombrePlan = planes.when(
       data: (lista) {
         for (final p in lista) {
@@ -103,26 +91,6 @@ class _Ficha extends ConsumerWidget {
         leading: enModal ? const _BotonCerrar() : null,
         automaticallyImplyLeading: !enModal,
         title: Text(cliente.nombre),
-        actions: [
-          IconButton(
-            tooltip: 'Editar',
-            icon: const Icon(Icons.edit),
-            onPressed: () => abrirFormularioCliente(context, clienteId: cliente.id),
-          ),
-          PopupMenuButton<EstadoCliente>(
-            tooltip: 'Cambiar estado',
-            onSelected: (nuevo) => _cambiarEstado(context, ref, nuevo),
-            itemBuilder: (_) => [
-              if (cliente.estado != EstadoCliente.activo)
-                const PopupMenuItem(value: EstadoCliente.activo, child: Text('Reactivar')),
-              if (cliente.estado == EstadoCliente.activo)
-                const PopupMenuItem(value: EstadoCliente.suspendido, child: Text('Suspender')),
-              if (cliente.estado != EstadoCliente.cancelado)
-                const PopupMenuItem(
-                    value: EstadoCliente.cancelado, child: Text('Cancelar servicio')),
-            ],
-          ),
-        ],
       ),
       floatingActionButton: cliente.estado == EstadoCliente.cancelado
           ? null
@@ -156,9 +124,13 @@ class _Ficha extends ConsumerWidget {
                     ],
                   ),
                   Text('al mes · vence el día ${cliente.diaCorte}'),
+                  const SizedBox(height: 8),
+                  // Gestión del cliente a la vista (antes estaba en un menú).
+                  BotonesCliente(cliente: cliente),
                   const Divider(height: 24),
                   _Dato('Plan', nombrePlan),
-                  _Dato('Contratación', cliente.tipoContratacion.etiqueta),
+                  _Dato('Contratación',
+                      textoContratacion(cliente.tipoContratacion, cliente.tipoContratacionDetalle)),
                   _Dato('Teléfono', cliente.telefono),
                   _Dato('Dirección', cliente.direccion),
                   _Dato('Zona', cliente.zona),
@@ -310,7 +282,12 @@ class _SeccionPagos extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SeccionTitulo('Pagos'),
+        const SeccionTitulo(
+          'Pagos',
+          icono: Icons.payments_outlined,
+          descripcion: 'Pagos recibidos de este cliente. Toca uno para ver o descargar su '
+              'comprobante.',
+        ),
         resumen,
         pagos.when(
           loading: () => const SizedBox.shrink(),
@@ -377,6 +354,9 @@ class _SeccionInstalaciones extends ConsumerWidget {
       children: [
         SeccionTitulo(
           'Instalaciones',
+          icono: Icons.construction,
+          descripcion: 'Visitas para instalar el servicio en el domicilio de este cliente: '
+              'fecha, técnico y costo de la instalación, y si ya la pagó.',
           accion: TextButton.icon(
             icon: const Icon(Icons.add),
             label: const Text('Agregar'),
@@ -478,6 +458,10 @@ class _SeccionEquipos extends ConsumerWidget {
       children: [
         SeccionTitulo(
           'Equipos',
+          icono: Icons.router_outlined,
+          descripcion: 'Antenas, routers y demás equipo en el domicilio de este cliente. '
+              'Si es de NET_MAX (prestado) queda registrado para recuperarlo o cobrarlo si '
+              'cancela; si es del cliente, solo como referencia.',
           accion: TextButton.icon(
             icon: const Icon(Icons.add),
             label: const Text('Agregar'),
@@ -551,7 +535,11 @@ class _SeccionHistorial extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SeccionTitulo('Historial de estados'),
+        const SeccionTitulo(
+          'Historial de estados',
+          icono: Icons.history,
+          descripcion: 'Altas, suspensiones, reactivaciones y cancelaciones, con su motivo.',
+        ),
         historial.when(
           loading: () => const LinearProgressIndicator(),
           error: (e, _) => ErrorVista(e),

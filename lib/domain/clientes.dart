@@ -91,3 +91,29 @@ bool faltaRegistrarEquipoPrestado({
   required int equiposNetmaxInstalados,
 }) =>
     esEquipoPrestado && equiposNetmaxInstalados == 0;
+
+/// Agrupa las descripciones de contratación personalizadas (sin distinguir
+/// mayúsculas, acentos ni espacios), de la más usada a la menos usada.
+/// Se muestra la primera forma en que se escribió cada una.
+List<({String detalle, int clientes})> agruparDetalles(Iterable<String?> detalles) {
+  final conteo = <String, ({String detalle, int clientes})>{};
+  for (final d in detalles) {
+    final texto = d?.trim() ?? '';
+    if (texto.isEmpty) continue;
+    final clave = normalizar(texto);
+    final previo = conteo[clave];
+    conteo[clave] = (detalle: previo?.detalle ?? texto, clientes: (previo?.clientes ?? 0) + 1);
+  }
+  return conteo.values.toList()
+    ..sort((a, b) => b.clientes != a.clientes
+        ? b.clientes.compareTo(a.clientes)
+        : normalizar(a.detalle).compareTo(normalizar(b.detalle)));
+}
+
+/// La descripción es obligatoria cuando la contratación es "otro".
+String? validarDetalleContratacion(String? valor) {
+  final v = valor?.trim() ?? '';
+  if (v.isEmpty) return 'Describe el tipo de contratación';
+  if (v.length > 80) return 'Máximo 80 caracteres';
+  return null;
+}

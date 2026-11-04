@@ -77,6 +77,12 @@ Cliente _cliente(int id, String nombre, String zona, String tel,
       creadoEn: DateTime(2025, 3, 15),
     );
 
+const _planes = [
+  Plan(id: 1, nombre: '10 Mbps', velocidadMbps: 10, precioBase: 25000, activo: true),
+  Plan(id: 2, nombre: '10 Mbps zona alejada', velocidadMbps: 10, precioBase: 30000, activo: true),
+  Plan(id: 3, nombre: '5 Mbps (anterior)', velocidadMbps: 5, precioBase: 20000, activo: false),
+];
+
 final _clientes = [
   _cliente(1, 'Ana López Martínez', 'Centro', '7711234567',
       tipo: TipoContratacion.equipoPrestado),
@@ -193,8 +199,15 @@ List<Override> _datosSimulados() => [
           .toList())),
       clienteProvider.overrideWith(
           (ref, id) => Stream.value(_clientes.firstWhere((c) => c.id == id))),
-      planesProvider.overrideWith((ref) => Stream.value(const [
-            Plan(id: 1, nombre: '10 Mbps', velocidadMbps: 10, precioBase: 25000, activo: true),
+      todosLosPlanesProvider.overrideWith((ref) => Stream.value(_planes)),
+      planesConUsoProvider.overrideWith((ref) => Stream.value([
+            (plan: _planes[0], clientes: 38),
+            (plan: _planes[1], clientes: 6),
+            (plan: _planes[2], clientes: 0),
+          ])),
+      contratacionesPersonalizadasProvider.overrideWith((ref) => Stream.value(const [
+            (detalle: 'Equipo a pagos (6 meses)', clientes: 3),
+            (detalle: 'Servicio para negocio', clientes: 1),
           ])),
       periodosProvider.overrideWith((ref, id) => Stream.value(_periodosAna())),
       cargosProvider.overrideWith((ref, id) => Stream.value([
@@ -274,6 +287,7 @@ Future<void> _capturar(
   Size tamano = const Size(412, 915),
   Finder? tocar,
   double zoom = 1.0,
+  Future<void> Function(WidgetTester tester)? despues,
 }) async {
   // En las pruebas las sombras se dibujan como un borde negro; aquí se quieren reales.
   debugDisableShadows = false;
@@ -289,7 +303,7 @@ Future<void> _capturar(
   if (ruta != '/inicio') {
     final router = GoRouter.of(tester.element(find.byType(Scaffold).first));
     // Las secciones principales se abren como pestaña; el resto, encima.
-    const secciones = ['/clientes', '/adeudos', '/reportes'];
+    const secciones = ['/clientes', '/adeudos', '/reportes', '/configuracion'];
     if (secciones.contains(ruta)) {
       router.go(ruta);
     } else {
@@ -301,6 +315,7 @@ Future<void> _capturar(
     await tester.tap(tocar.first);
     await tester.pumpAndSettle();
   }
+  if (despues != null) await despues(tester);
   // Las imágenes del logo se decodifican fuera del reloj simulado.
   await tester.runAsync(() async {
     final contexto = tester.element(find.byType(Scaffold).first);
@@ -373,6 +388,30 @@ void main() {
   testWidgets('captura 22_inicio_zoom_125',
       (tester) => _capturar(tester, '22_inicio_zoom_125', '/inicio',
           tamano: escritorio, zoom: 1.25),
+      skip: !_activo);
+  testWidgets('captura 24_configuracion_escritorio',
+      (tester) => _capturar(tester, '24_configuracion_escritorio', '/configuracion',
+          tamano: escritorio),
+      skip: !_activo);
+  testWidgets('captura 25_ficha_acciones_escritorio',
+      (tester) => _capturar(tester, '25_ficha_acciones_escritorio', '/clientes/1',
+          tamano: escritorio),
+      skip: !_activo);
+  testWidgets('captura 26_clientes_celular_acciones',
+      (tester) => _capturar(tester, '26_clientes_celular_acciones', '/clientes'),
+      skip: !_activo);
+  testWidgets('captura 27_contratacion_otro',
+      (tester) => _capturar(tester, '27_contratacion_otro', '/clientes',
+          tamano: escritorio, tocar: find.text('Nuevo cliente'), despues: (tester) async {
+        await tester.tap(find.text('Equipo propio (solo conexión)').last);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Otro (personalizado)').last);
+        await tester.pumpAndSettle();
+      }),
+      skip: !_activo);
+  testWidgets('captura 28_inicio_zoom_80',
+      (tester) => _capturar(tester, '28_inicio_zoom_80', '/inicio',
+          tamano: escritorio, zoom: 0.8),
       skip: !_activo);
   testWidgets('captura 23_panel_compacto',
       (tester) => _capturar(tester, '23_panel_compacto', '/clientes',

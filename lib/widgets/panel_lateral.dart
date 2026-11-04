@@ -32,8 +32,8 @@ class PanelLateral extends ConsumerWidget {
     required this.seleccionado,
     required this.onSeleccionar,
     required this.extendido,
-    this.destinoInferior,
-    this.inferiorSeleccionado = false,
+    this.destinosInferiores = const [],
+    this.inferiorSeleccionado = -1,
     this.onInferior,
   });
 
@@ -42,10 +42,12 @@ class PanelLateral extends ConsumerWidget {
   final ValueChanged<int> onSeleccionar;
   final bool extendido;
 
-  /// Destino secundario al final (Respaldos).
-  final DestinoPanel? destinoInferior;
-  final bool inferiorSeleccionado;
-  final VoidCallback? onInferior;
+  /// Destinos secundarios al final (Respaldos, Configuración).
+  final List<DestinoPanel> destinosInferiores;
+
+  /// Índice del destino inferior elegido (-1 = ninguno).
+  final int inferiorSeleccionado;
+  final ValueChanged<int>? onInferior;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -56,7 +58,13 @@ class PanelLateral extends ConsumerWidget {
       width: extendido ? 248 : 96,
       color: ColoresNetMax.azul,
       child: SafeArea(
-        child: Column(
+        // Si la ventana es baja, el panel se desplaza en vez de desbordarse.
+        child: LayoutBuilder(
+          builder: (context, limites) => SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: limites.maxHeight),
+              child: IntrinsicHeight(
+                child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
@@ -77,12 +85,12 @@ class PanelLateral extends ConsumerWidget {
                 onTap: () => onSeleccionar(i),
               ),
             const Spacer(),
-            if (destinoInferior != null)
+            for (final (i, d) in destinosInferiores.indexed)
               _BotonPanel(
-                destino: destinoInferior!,
-                seleccionado: inferiorSeleccionado,
+                destino: d,
+                seleccionado: i == inferiorSeleccionado,
                 extendido: extendido,
-                onTap: onInferior ?? () {},
+                onTap: () => onInferior?.call(i),
               ),
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
@@ -97,6 +105,10 @@ class PanelLateral extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
           ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

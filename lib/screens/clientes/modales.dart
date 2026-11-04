@@ -30,15 +30,23 @@ Future<T?> mostrarModal<T>(
 }) {
   final tamano = MediaQuery.sizeOf(context);
   final flotante = tamano.width >= anchoModalFlotante;
+  // Fuera del builder para que la navegación interna no se pierda al reconstruir.
+  final navegador = GlobalKey<NavigatorState>();
 
   return showDialog<T>(
     context: context,
     barrierDismissible: false,
     builder: (contextoDialogo) {
-      // Navegación y mensajes propios del modal.
-      final cuerpo = ScaffoldMessenger(
-        child: Navigator(
-          onGenerateRoute: (_) => MaterialPageRoute<void>(builder: contenido),
+      // Navegación y mensajes propios del modal. El botón "atrás" de Android
+      // regresa dentro del modal (p. ej. del estado de cuenta a la ficha) en vez
+      // de cerrarlo todo.
+      final cuerpo = NavigatorPopHandler<Object?>(
+        onPopWithResult: (_) => navegador.currentState?.maybePop(),
+        child: ScaffoldMessenger(
+          child: Navigator(
+            key: navegador,
+            onGenerateRoute: (_) => MaterialPageRoute<void>(builder: contenido),
+          ),
         ),
       );
       if (!flotante) return Dialog.fullscreen(child: cuerpo);

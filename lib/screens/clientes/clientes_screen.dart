@@ -7,6 +7,7 @@ import '../../data/repositories/clientes_repository.dart';
 import '../../providers/providers.dart';
 import '../../widgets/comunes.dart';
 import '../../widgets/disposicion.dart';
+import 'acciones_cliente.dart';
 import 'modales.dart';
 
 /// Lista de clientes con búsqueda y filtro por estado.
@@ -111,23 +112,33 @@ class _ClientesScreenState extends ConsumerState<ClientesScreen> {
                     ),
                   );
                 }
-                return ListView.separated(
-                  padding: const EdgeInsets.only(bottom: 88),
-                  itemCount: lista.length + 1,
-                  separatorBuilder: (_, _) => const Divider(height: 1),
-                  itemBuilder: (context, i) {
-                    if (i == 0) {
-                      return Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-                        child: Text(
-                          '${lista.length} cliente${lista.length == 1 ? '' : 's'}',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      );
-                    }
-                    return _ClienteTile(lista[i - 1]);
-                  },
-                );
+                return LayoutBuilder(builder: (context, limites) {
+                  final modo = modoTabla(limites.maxWidth);
+                  return ListView.separated(
+                    padding: const EdgeInsets.only(bottom: 88),
+                    itemCount: lista.length + 1,
+                    separatorBuilder: (_, i) =>
+                        i == 0 && modo != ModoTabla.lista ? const SizedBox.shrink() : const Divider(height: 1),
+                    itemBuilder: (context, i) {
+                      if (i == 0) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                              child: Text(
+                                '${lista.length} cliente${lista.length == 1 ? '' : 's'}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ),
+                            if (modo != ModoTabla.lista) _EncabezadoTabla(modo: modo),
+                          ],
+                        );
+                      }
+                      return _FilaCliente(lista[i - 1], modo: modo);
+                    },
+                  );
+                });
               },
             ),
           ),
@@ -149,36 +160,152 @@ class _ClientesScreenState extends ConsumerState<ClientesScreen> {
   }
 }
 
-class _ClienteTile extends StatelessWidget {
-  const _ClienteTile(this.cliente);
+/// Cómo se acomoda la lista según el ancho disponible.
+enum ModoTabla {
+  /// Celular: renglón con los botones de gestión (solo íconos) abajo.
+  lista,
 
-  final Cliente cliente;
+  /// Tabla con columnas; botones solo con ícono.
+  tablaCompacta,
+
+  /// Tabla con columnas; botones con ícono y texto.
+  tabla,
+}
+
+ModoTabla modoTabla(double ancho) => ancho >= 1100
+    ? ModoTabla.tabla
+    : (ancho >= 760 ? ModoTabla.tablaCompacta : ModoTabla.lista);
+
+const _anchoMensualidad = 130.0;
+const _anchoEstado = 120.0;
+double _anchoAcciones(ModoTabla modo) => modo == ModoTabla.tabla ? 400 : 150;
+
+class _EncabezadoTabla extends StatelessWidget {
+  const _EncabezadoTabla({required this.modo});
+
+  final ModoTabla modo;
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final estilo = Theme.of(context)
+        .textTheme
+        .labelMedium
+        ?.copyWith(color: scheme.onSurfaceVariant, fontWeight: FontWeight.w600);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        border: Border(
+          top: BorderSide(color: scheme.outlineVariant),
+          bottom: BorderSide(color: scheme.outlineVariant),
+        ),
+      ),
+      child: Row(
+        children: [
+          const SizedBox(width: 56),
+          Expanded(child: Text('CLIENTE', style: estilo)),
+          SizedBox(width: _anchoMensualidad, child: Text('MENSUALIDAD', style: estilo)),
+          SizedBox(width: _anchoEstado, child: Text('ESTADO', style: estilo)),
+          SizedBox(width: _anchoAcciones(modo), child: Text('ACCIONES', style: estilo)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Renglón de la tabla de gestión: datos del cliente y botones visibles para
+/// editar, suspender/reactivar y cancelar. Tocar el renglón abre la ficha.
+class _FilaCliente extends StatelessWidget {
+  const _FilaCliente(this.cliente, {required this.modo});
+
+  final Cliente cliente;
+  final ModoTabla modo;
+
+  @override
+  Widget build(BuildContext context) {
+    final texto = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
     final detalle = [
       if (cliente.zona != null) cliente.zona!,
       if (cliente.telefono != null) cliente.telefono!,
     ].join(' · ');
+    final avatar = CircleAvatar(
+      child: Text(cliente.nombre.isEmpty ? '?' : cliente.nombre[0].toUpperCase()),
+    );
+    final nombre = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(cliente.nombre, style: texto.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
+        Text(
+          detalle.isEmpty ? 'Corte día ${cliente.diaCorte}' : '$detalle · Corte día ${cliente.diaCorte}',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: texto.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+        ),
+      ],
+    );
 
-    return ListTile(
-      leading: CircleAvatar(
-        child: Text(cliente.nombre.isEmpty ? '?' : cliente.nombre[0].toUpperCase()),
-      ),
-      title: Text(cliente.nombre),
-      subtitle: Text(
-        detalle.isEmpty ? 'Corte día ${cliente.diaCorte}' : '$detalle · Corte día ${cliente.diaCorte}',
-      ),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(formatoDinero(cliente.precioMensual)),
-          const SizedBox(height: 4),
-          EstadoChip(cliente.estado),
-        ],
-      ),
+    if (modo == ModoTabla.lista) {
+      return InkWell(
+        onTap: () => abrirFichaCliente(context, cliente.id),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 8, 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  avatar,
+                  const SizedBox(width: 16),
+                  Expanded(child: nombre),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(formatoDinero(cliente.precioMensual)),
+                        const SizedBox(height: 4),
+                        EstadoChip(cliente.estado),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: BotonesCliente(cliente: cliente, compacto: true),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return InkWell(
       onTap: () => abrirFichaCliente(context, cliente.id),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
+          children: [
+            avatar,
+            const SizedBox(width: 16),
+            Expanded(child: nombre),
+            SizedBox(
+              width: _anchoMensualidad,
+              child: Text(formatoDinero(cliente.precioMensual), style: texto.bodyLarge),
+            ),
+            SizedBox(
+              width: _anchoEstado,
+              child: Align(alignment: Alignment.centerLeft, child: EstadoChip(cliente.estado)),
+            ),
+            SizedBox(
+              width: _anchoAcciones(modo),
+              child: BotonesCliente(cliente: cliente, compacto: modo != ModoTabla.tabla),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

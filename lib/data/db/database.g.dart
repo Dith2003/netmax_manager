@@ -917,6 +917,17 @@ class $ClientesTable extends Clientes with TableInfo<$ClientesTable, Cliente> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   ).withConverter<TipoContratacion>($ClientesTable.$convertertipoContratacion);
+  static const VerificationMeta _tipoContratacionDetalleMeta =
+      const VerificationMeta('tipoContratacionDetalle');
+  @override
+  late final GeneratedColumn<String> tipoContratacionDetalle =
+      GeneratedColumn<String>(
+        'tipo_contratacion_detalle',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _fechaAltaMeta = const VerificationMeta(
     'fechaAlta',
   );
@@ -986,6 +997,7 @@ class $ClientesTable extends Clientes with TableInfo<$ClientesTable, Cliente> {
     precioMensual,
     diaCorte,
     tipoContratacion,
+    tipoContratacionDetalle,
     fechaAlta,
     primerMesCobro,
     estado,
@@ -1065,6 +1077,15 @@ class $ClientesTable extends Clientes with TableInfo<$ClientesTable, Cliente> {
       );
     } else if (isInserting) {
       context.missing(_diaCorteMeta);
+    }
+    if (data.containsKey('tipo_contratacion_detalle')) {
+      context.handle(
+        _tipoContratacionDetalleMeta,
+        tipoContratacionDetalle.isAcceptableOrUnknown(
+          data['tipo_contratacion_detalle']!,
+          _tipoContratacionDetalleMeta,
+        ),
+      );
     }
     if (data.containsKey('fecha_alta')) {
       context.handle(
@@ -1146,6 +1167,10 @@ class $ClientesTable extends Clientes with TableInfo<$ClientesTable, Cliente> {
           data['${effectivePrefix}tipo_contratacion'],
         )!,
       ),
+      tipoContratacionDetalle: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tipo_contratacion_detalle'],
+      ),
       fechaAlta: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}fecha_alta'],
@@ -1195,6 +1220,9 @@ class Cliente extends DataClass implements Insertable<Cliente> {
   final int precioMensual;
   final int diaCorte;
   final TipoContratacion tipoContratacion;
+
+  /// Descripción libre cuando el tipo de contratación es `otro` (v4).
+  final String? tipoContratacionDetalle;
   final DateTime fechaAlta;
 
   /// Primer mes que se cobra, 'YYYY-MM' (puede ser el mes del alta, el siguiente u otro).
@@ -1214,6 +1242,7 @@ class Cliente extends DataClass implements Insertable<Cliente> {
     required this.precioMensual,
     required this.diaCorte,
     required this.tipoContratacion,
+    this.tipoContratacionDetalle,
     required this.fechaAlta,
     this.primerMesCobro,
     required this.estado,
@@ -1243,6 +1272,11 @@ class Cliente extends DataClass implements Insertable<Cliente> {
     {
       map['tipo_contratacion'] = Variable<String>(
         $ClientesTable.$convertertipoContratacion.toSql(tipoContratacion),
+      );
+    }
+    if (!nullToAbsent || tipoContratacionDetalle != null) {
+      map['tipo_contratacion_detalle'] = Variable<String>(
+        tipoContratacionDetalle,
       );
     }
     map['fecha_alta'] = Variable<DateTime>(fechaAlta);
@@ -1279,6 +1313,9 @@ class Cliente extends DataClass implements Insertable<Cliente> {
       precioMensual: Value(precioMensual),
       diaCorte: Value(diaCorte),
       tipoContratacion: Value(tipoContratacion),
+      tipoContratacionDetalle: tipoContratacionDetalle == null && nullToAbsent
+          ? const Value.absent()
+          : Value(tipoContratacionDetalle),
       fechaAlta: Value(fechaAlta),
       primerMesCobro: primerMesCobro == null && nullToAbsent
           ? const Value.absent()
@@ -1309,6 +1346,9 @@ class Cliente extends DataClass implements Insertable<Cliente> {
       tipoContratacion: $ClientesTable.$convertertipoContratacion.fromJson(
         serializer.fromJson<String>(json['tipoContratacion']),
       ),
+      tipoContratacionDetalle: serializer.fromJson<String?>(
+        json['tipoContratacionDetalle'],
+      ),
       fechaAlta: serializer.fromJson<DateTime>(json['fechaAlta']),
       primerMesCobro: serializer.fromJson<String?>(json['primerMesCobro']),
       estado: $ClientesTable.$converterestado.fromJson(
@@ -1334,6 +1374,9 @@ class Cliente extends DataClass implements Insertable<Cliente> {
       'tipoContratacion': serializer.toJson<String>(
         $ClientesTable.$convertertipoContratacion.toJson(tipoContratacion),
       ),
+      'tipoContratacionDetalle': serializer.toJson<String?>(
+        tipoContratacionDetalle,
+      ),
       'fechaAlta': serializer.toJson<DateTime>(fechaAlta),
       'primerMesCobro': serializer.toJson<String?>(primerMesCobro),
       'estado': serializer.toJson<String>(
@@ -1355,6 +1398,7 @@ class Cliente extends DataClass implements Insertable<Cliente> {
     int? precioMensual,
     int? diaCorte,
     TipoContratacion? tipoContratacion,
+    Value<String?> tipoContratacionDetalle = const Value.absent(),
     DateTime? fechaAlta,
     Value<String?> primerMesCobro = const Value.absent(),
     EstadoCliente? estado,
@@ -1371,6 +1415,9 @@ class Cliente extends DataClass implements Insertable<Cliente> {
     precioMensual: precioMensual ?? this.precioMensual,
     diaCorte: diaCorte ?? this.diaCorte,
     tipoContratacion: tipoContratacion ?? this.tipoContratacion,
+    tipoContratacionDetalle: tipoContratacionDetalle.present
+        ? tipoContratacionDetalle.value
+        : this.tipoContratacionDetalle,
     fechaAlta: fechaAlta ?? this.fechaAlta,
     primerMesCobro: primerMesCobro.present
         ? primerMesCobro.value
@@ -1397,6 +1444,9 @@ class Cliente extends DataClass implements Insertable<Cliente> {
       tipoContratacion: data.tipoContratacion.present
           ? data.tipoContratacion.value
           : this.tipoContratacion,
+      tipoContratacionDetalle: data.tipoContratacionDetalle.present
+          ? data.tipoContratacionDetalle.value
+          : this.tipoContratacionDetalle,
       fechaAlta: data.fechaAlta.present ? data.fechaAlta.value : this.fechaAlta,
       primerMesCobro: data.primerMesCobro.present
           ? data.primerMesCobro.value
@@ -1420,6 +1470,7 @@ class Cliente extends DataClass implements Insertable<Cliente> {
           ..write('precioMensual: $precioMensual, ')
           ..write('diaCorte: $diaCorte, ')
           ..write('tipoContratacion: $tipoContratacion, ')
+          ..write('tipoContratacionDetalle: $tipoContratacionDetalle, ')
           ..write('fechaAlta: $fechaAlta, ')
           ..write('primerMesCobro: $primerMesCobro, ')
           ..write('estado: $estado, ')
@@ -1441,6 +1492,7 @@ class Cliente extends DataClass implements Insertable<Cliente> {
     precioMensual,
     diaCorte,
     tipoContratacion,
+    tipoContratacionDetalle,
     fechaAlta,
     primerMesCobro,
     estado,
@@ -1461,6 +1513,7 @@ class Cliente extends DataClass implements Insertable<Cliente> {
           other.precioMensual == this.precioMensual &&
           other.diaCorte == this.diaCorte &&
           other.tipoContratacion == this.tipoContratacion &&
+          other.tipoContratacionDetalle == this.tipoContratacionDetalle &&
           other.fechaAlta == this.fechaAlta &&
           other.primerMesCobro == this.primerMesCobro &&
           other.estado == this.estado &&
@@ -1479,6 +1532,7 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
   final Value<int> precioMensual;
   final Value<int> diaCorte;
   final Value<TipoContratacion> tipoContratacion;
+  final Value<String?> tipoContratacionDetalle;
   final Value<DateTime> fechaAlta;
   final Value<String?> primerMesCobro;
   final Value<EstadoCliente> estado;
@@ -1495,6 +1549,7 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
     this.precioMensual = const Value.absent(),
     this.diaCorte = const Value.absent(),
     this.tipoContratacion = const Value.absent(),
+    this.tipoContratacionDetalle = const Value.absent(),
     this.fechaAlta = const Value.absent(),
     this.primerMesCobro = const Value.absent(),
     this.estado = const Value.absent(),
@@ -1512,6 +1567,7 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
     required int precioMensual,
     required int diaCorte,
     required TipoContratacion tipoContratacion,
+    this.tipoContratacionDetalle = const Value.absent(),
     required DateTime fechaAlta,
     this.primerMesCobro = const Value.absent(),
     this.estado = const Value.absent(),
@@ -1534,6 +1590,7 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
     Expression<int>? precioMensual,
     Expression<int>? diaCorte,
     Expression<String>? tipoContratacion,
+    Expression<String>? tipoContratacionDetalle,
     Expression<DateTime>? fechaAlta,
     Expression<String>? primerMesCobro,
     Expression<String>? estado,
@@ -1551,6 +1608,8 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
       if (precioMensual != null) 'precio_mensual': precioMensual,
       if (diaCorte != null) 'dia_corte': diaCorte,
       if (tipoContratacion != null) 'tipo_contratacion': tipoContratacion,
+      if (tipoContratacionDetalle != null)
+        'tipo_contratacion_detalle': tipoContratacionDetalle,
       if (fechaAlta != null) 'fecha_alta': fechaAlta,
       if (primerMesCobro != null) 'primer_mes_cobro': primerMesCobro,
       if (estado != null) 'estado': estado,
@@ -1570,6 +1629,7 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
     Value<int>? precioMensual,
     Value<int>? diaCorte,
     Value<TipoContratacion>? tipoContratacion,
+    Value<String?>? tipoContratacionDetalle,
     Value<DateTime>? fechaAlta,
     Value<String?>? primerMesCobro,
     Value<EstadoCliente>? estado,
@@ -1587,6 +1647,8 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
       precioMensual: precioMensual ?? this.precioMensual,
       diaCorte: diaCorte ?? this.diaCorte,
       tipoContratacion: tipoContratacion ?? this.tipoContratacion,
+      tipoContratacionDetalle:
+          tipoContratacionDetalle ?? this.tipoContratacionDetalle,
       fechaAlta: fechaAlta ?? this.fechaAlta,
       primerMesCobro: primerMesCobro ?? this.primerMesCobro,
       estado: estado ?? this.estado,
@@ -1630,6 +1692,11 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
         $ClientesTable.$convertertipoContratacion.toSql(tipoContratacion.value),
       );
     }
+    if (tipoContratacionDetalle.present) {
+      map['tipo_contratacion_detalle'] = Variable<String>(
+        tipoContratacionDetalle.value,
+      );
+    }
     if (fechaAlta.present) {
       map['fecha_alta'] = Variable<DateTime>(fechaAlta.value);
     }
@@ -1663,6 +1730,7 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
           ..write('precioMensual: $precioMensual, ')
           ..write('diaCorte: $diaCorte, ')
           ..write('tipoContratacion: $tipoContratacion, ')
+          ..write('tipoContratacionDetalle: $tipoContratacionDetalle, ')
           ..write('fechaAlta: $fechaAlta, ')
           ..write('primerMesCobro: $primerMesCobro, ')
           ..write('estado: $estado, ')
@@ -6894,6 +6962,7 @@ typedef $$ClientesTableCreateCompanionBuilder = ClientesCompanion Function({
   required int precioMensual,
   required int diaCorte,
   required TipoContratacion tipoContratacion,
+  Value<String?> tipoContratacionDetalle,
   required DateTime fechaAlta,
   Value<String?> primerMesCobro,
   Value<EstadoCliente> estado,
@@ -6911,6 +6980,7 @@ typedef $$ClientesTableUpdateCompanionBuilder = ClientesCompanion Function({
   Value<int> precioMensual,
   Value<int> diaCorte,
   Value<TipoContratacion> tipoContratacion,
+  Value<String?> tipoContratacionDetalle,
   Value<DateTime> fechaAlta,
   Value<String?> primerMesCobro,
   Value<EstadoCliente> estado,
@@ -7106,6 +7176,11 @@ class $$ClientesTableFilterComposer
   get tipoContratacion => $composableBuilder(
     column: $table.tipoContratacion,
     builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<String> get tipoContratacionDetalle => $composableBuilder(
+    column: $table.tipoContratacionDetalle,
+    builder: (column) => ColumnFilters(column),
   );
 
   ColumnFilters<DateTime> get fechaAlta => $composableBuilder(
@@ -7362,6 +7437,11 @@ class $$ClientesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get tipoContratacionDetalle => $composableBuilder(
+    column: $table.tipoContratacionDetalle,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get fechaAlta => $composableBuilder(
     column: $table.fechaAlta,
     builder: (column) => ColumnOrderings(column),
@@ -7451,6 +7531,11 @@ class $$ClientesTableAnnotationComposer
   GeneratedColumnWithTypeConverter<TipoContratacion, String>
   get tipoContratacion => $composableBuilder(
     column: $table.tipoContratacion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get tipoContratacionDetalle => $composableBuilder(
+    column: $table.tipoContratacionDetalle,
     builder: (column) => column,
   );
 
@@ -7691,6 +7776,7 @@ class $$ClientesTableTableManager
                 Value<int> precioMensual = const Value.absent(),
                 Value<int> diaCorte = const Value.absent(),
                 Value<TipoContratacion> tipoContratacion = const Value.absent(),
+                Value<String?> tipoContratacionDetalle = const Value.absent(),
                 Value<DateTime> fechaAlta = const Value.absent(),
                 Value<String?> primerMesCobro = const Value.absent(),
                 Value<EstadoCliente> estado = const Value.absent(),
@@ -7707,6 +7793,7 @@ class $$ClientesTableTableManager
                 precioMensual: precioMensual,
                 diaCorte: diaCorte,
                 tipoContratacion: tipoContratacion,
+                tipoContratacionDetalle: tipoContratacionDetalle,
                 fechaAlta: fechaAlta,
                 primerMesCobro: primerMesCobro,
                 estado: estado,
@@ -7725,6 +7812,7 @@ class $$ClientesTableTableManager
                 required int precioMensual,
                 required int diaCorte,
                 required TipoContratacion tipoContratacion,
+                Value<String?> tipoContratacionDetalle = const Value.absent(),
                 required DateTime fechaAlta,
                 Value<String?> primerMesCobro = const Value.absent(),
                 Value<EstadoCliente> estado = const Value.absent(),
@@ -7741,6 +7829,7 @@ class $$ClientesTableTableManager
                 precioMensual: precioMensual,
                 diaCorte: diaCorte,
                 tipoContratacion: tipoContratacion,
+                tipoContratacionDetalle: tipoContratacionDetalle,
                 fechaAlta: fechaAlta,
                 primerMesCobro: primerMesCobro,
                 estado: estado,

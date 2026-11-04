@@ -34,6 +34,7 @@ class DatosCliente {
     required this.precioMensual,
     required this.diaCorte,
     required this.tipoContratacion,
+    this.tipoContratacionDetalle,
     required this.fechaAlta,
     required this.primerMesCobro,
     this.notas,
@@ -48,7 +49,14 @@ class DatosCliente {
   final int precioMensual;
   final int diaCorte;
   final TipoContratacion tipoContratacion;
+
+  /// Descripción libre cuando [tipoContratacion] es `otro` (si no, se ignora).
+  final String? tipoContratacionDetalle;
   final DateTime fechaAlta;
+
+  /// Detalle que se guarda: solo para `otro`.
+  String? get detalleGuardado =>
+      tipoContratacion == TipoContratacion.otro ? tipoContratacionDetalle?.trim() : null;
 
   /// Primer mes que se le cobra (mes del alta, el siguiente u otro).
   final Mes primerMesCobro;
@@ -111,6 +119,19 @@ class ClientesRepository {
         .watch();
   }
 
+  // ----- Contratación -----
+
+  /// Descripciones de contratación personalizadas ya usadas (para sugerirlas),
+  /// de la más usada a la menos usada.
+  Stream<List<({String detalle, int clientes})>> vigilarContratacionesPersonalizadas() {
+    return (_db.select(_db.clientes)
+          ..where((c) =>
+              c.tipoContratacion.equalsValue(TipoContratacion.otro) &
+              c.tipoContratacionDetalle.isNotNull()))
+        .watch()
+        .map((lista) => agruparDetalles([for (final c in lista) c.tipoContratacionDetalle]));
+  }
+
   // ----- Clientes -----
 
   /// Lista de clientes filtrada y ordenada por nombre.
@@ -155,6 +176,7 @@ class ClientesRepository {
             precioMensual: d.precioMensual,
             diaCorte: d.diaCorte,
             tipoContratacion: d.tipoContratacion,
+            tipoContratacionDetalle: Value(d.detalleGuardado),
             fechaAlta: d.fechaAlta,
             primerMesCobro: Value(d.primerMesCobro.toString()),
             notas: Value(d.notas),
@@ -185,6 +207,7 @@ class ClientesRepository {
         precioMensual: Value(d.precioMensual),
         diaCorte: Value(d.diaCorte),
         tipoContratacion: Value(d.tipoContratacion),
+        tipoContratacionDetalle: Value(d.detalleGuardado),
         fechaAlta: Value(d.fechaAlta),
         primerMesCobro: Value(d.primerMesCobro.toString()),
         notas: Value(d.notas),

@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,6 +12,7 @@ import 'data/respaldos/respaldo_service.dart';
 import 'providers/providers.dart';
 import 'providers/zoom.dart';
 import 'routes/app_router.dart';
+import 'widgets/zoom_interfaz.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -134,61 +134,7 @@ class _NetMaxAppState extends ConsumerState<NetMaxApp> {
       locale: const Locale('es', 'MX'),
       supportedLocales: const [Locale('es', 'MX'), Locale('es')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
-      builder: (context, child) => _ConZoom(child: child ?? const SizedBox.shrink()),
-    );
-  }
-}
-
-/// Aplica el zoom a toda la interfaz (pantallas, diálogos y menús) y atiende
-/// los atajos Ctrl + (acercar), Ctrl − (alejar) y Ctrl 0 (100 %).
-class _ConZoom extends ConsumerWidget {
-  const _ConZoom({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final zoom = ref.watch(zoomProvider);
-    final control = ref.read(zoomProvider.notifier);
-
-    // Siempre la misma estructura (aunque el zoom sea 100 %) para no perder
-    // la navegación al cambiarlo.
-    final mq = MediaQuery.of(context);
-    final tamano = mq.size / zoom;
-    final contenido = MediaQuery(
-      data: mq.copyWith(
-        size: tamano,
-        padding: mq.padding / zoom,
-        viewPadding: mq.viewPadding / zoom,
-        viewInsets: mq.viewInsets / zoom,
-      ),
-      child: ClipRect(
-        child: Transform.scale(
-          scale: zoom,
-          alignment: Alignment.topLeft,
-          child: OverflowBox(
-            alignment: Alignment.topLeft,
-            minWidth: tamano.width,
-            maxWidth: tamano.width,
-            minHeight: tamano.height,
-            maxHeight: tamano.height,
-            child: child,
-          ),
-        ),
-      ),
-    );
-
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.equal, control: true): control.acercar,
-        const SingleActivator(LogicalKeyboardKey.add, control: true): control.acercar,
-        const SingleActivator(LogicalKeyboardKey.numpadAdd, control: true): control.acercar,
-        const SingleActivator(LogicalKeyboardKey.minus, control: true): control.alejar,
-        const SingleActivator(LogicalKeyboardKey.numpadSubtract, control: true): control.alejar,
-        const SingleActivator(LogicalKeyboardKey.digit0, control: true): control.restablecer,
-        const SingleActivator(LogicalKeyboardKey.numpad0, control: true): control.restablecer,
-      },
-      child: Focus(autofocus: true, child: contenido),
+      builder: (context, child) => ZoomInterfaz(child: child ?? const SizedBox.shrink()),
     );
   }
 }

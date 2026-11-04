@@ -27,14 +27,18 @@ lib/
                  # marca.dart (ColoresNetMax, DatosNegocio, ImagenesMarca, widget MarcaNetMax),
                  # tema.dart (temaNetMax(): tema Material 3 con la identidad)
   domain/        # reglas puras sin BD: cobranza.dart (aplicarPago, calcularAdeudo, pagadoHasta),
-                 # clientes.dart (búsqueda sin acentos, validaciones de formulario),
+                 # clientes.dart (búsqueda sin acentos, validaciones de formulario,
+                 #   agruparDetalles de contratación personalizada),
+                 # planes.dart (DatosPlan, validaciones de plan),
                  # vencimientos.dart (primer mes de cobro, mesesPorGenerar, estadoEnFecha),
                  # dashboard.dart (cobrado del mes, avance del mes, próximos vencimientos,
                  #   serieCobranza y serieActividad de 12 meses),
                  # reportes.dart (FilaPago, ingresosPorMes, FilaCliente, DatosComprobante)
   data/
     db/          # database.dart (tablas drift + AppDatabase), enums.dart
-    repositories/  # clientes_repository.dart (clientes, estados, instalaciones, equipos)
+    repositories/  # clientes_repository.dart (clientes, estados, instalaciones, equipos,
+                   #   contrataciones personalizadas usadas)
+                   # planes_repository.dart (catálogo de planes con número de clientes)
                    # pagos_repository.dart (saldos por mes, registrar/cancelar pago, historial)
                    # vencimientos_repository.dart (generar meses, cortesía, agregar/quitar mes,
                    #   cargos extra, adeudos)
@@ -45,11 +49,15 @@ lib/
   reportes/      # pdf_reportes.dart: PDFs carta con encabezado de marca y pie con datos del
                  # negocio; EstiloPdf (Outfit + logo) cargado con cargarEstiloPdf();
                  # pdfComprobante (tipo cheque: 1/3 de hoja carta, `formatoComprobante`, talón
-                 # a la izquierda, sello si el pago está cancelado)
+                 # a la izquierda, sello si el pago está cancelado);
+                 # guardar_pdf.dart (botón "Guardar PDF" en la computadora: en Windows el
+                 #   "compartir" de printing solo abre el PDF desde una carpeta temporal)
   providers/     # providers.dart: databaseProvider (se inyecta en main) y StreamProviders;
                  # zoom.dart (zoomProvider, niveles 80–150 %, guardado en configuraciones.zoom)
-  screens/       # una carpeta por módulo: clientes/ (lista, formulario, ficha, diálogos,
+  screens/       # una carpeta por módulo: clientes/ (lista = tabla de gestión, formulario,
+                 # ficha, diálogos, acciones_cliente.dart: editar/suspender/reactivar/cancelar,
                  # modales.dart: alta/edición/ficha en ventana modal con navegación propia),
+                 # configuracion/ (planes y tipos de contratación, dialogo_plan.dart),
                  # estado_cuenta_screen.dart; pagos/ (registrar pago, comprobante_screen);
                  # adeudos/ (lista de adeudos); inicio/ (dashboard: acciones rápidas, indicadores,
                  # graficas.dart con fl_chart, vencimientos, pagos recientes);
@@ -57,15 +65,17 @@ lib/
                  # respaldos/ (crear: Windows guardar como / Android compartir; restaurar)
   widgets/       # comunes.dart (EstadoChip, ErrorVista, SeccionTitulo, mostrarMensaje)
                  # disposicion.dart (esEscritorio, ContenidoCentrado, EncabezadoSeccion,
-                 #   SeccionFormulario, FilaCampos); panel_lateral.dart (navegación de escritorio)
+                 #   SeccionFormulario, FilaCampos); panel_lateral.dart (navegación de escritorio);
+                 # zoom_interfaz.dart (ZoomInterfaz: FittedBox + atajos de teclado)
   routes/        # app_router.dart (go_router, ShellRoute: panel lateral si ancho ≥ 900, barra
-                 # inferior si no; Inicio/Clientes/Adeudos/Reportes + Respaldos abajo del panel):
+                 # inferior si no; Inicio/Clientes/Adeudos/Reportes + Respaldos y Configuración
+                 # abajo del panel; en el celular, íconos en la barra de Inicio):
                  # /inicio (arranque), /clientes, /clientes/nuevo, /clientes/:id,
                  # /clientes/:id/{editar,pago,estado-cuenta}, /adeudos, /reportes,
                  # /reportes/comprobantes, /reportes/:tipo,
-                 # /respaldos (Inicio y panel lateral)
+                 # /respaldos, /configuracion (Inicio y panel lateral)
   main.dart      # AppRaiz: abre la BD y reconstruye toda la app (ProviderScope con key)
-                 # al restaurar un respaldo (restaurarRespaldoProvider); _ConZoom escala
+                 # al restaurar un respaldo (restaurarRespaldoProvider); ZoomInterfaz escala
                  # toda la interfaz (Ctrl + / Ctrl − / Ctrl 0)
 assets/
   fonts/         # Outfit (Regular/Medium/SemiBold/Bold, OFL) para la app y los PDF
@@ -86,8 +96,9 @@ docs/
    La relación vive en `pago_aplicaciones` (permite pagos parciales).
 4. Un periodo puede marcarse como **cortesía** (monto $0, no genera adeudo).
 5. **Adeudo** = suma de periodos vencidos no pagados por completo.
-6. Tipos de contratación: `compraEquipo`, `equipoPropio`, `equipoPrestado`.
-   Si el equipo es prestado, debe quedar registrado en `equipos` para su recuperación.
+6. Tipos de contratación: `compraEquipo`, `equipoPropio`, `equipoPrestado` y `otro`
+   (personalizado: descripción libre obligatoria en `clientes.tipo_contratacion_detalle`; se
+   sugieren las ya usadas). Si el equipo es prestado, debe quedar registrado en `equipos`.
 7. Los montos se guardan en **centavos (enteros)**, nunca en `double`.
 8. Nada se borra físicamente: clientes y pagos se cancelan/desactivan (auditoría).
 9. Cada cliente tiene un **primer mes de cobro** (`clientes.primer_mes_cobro`): el mes del alta,
@@ -128,6 +139,13 @@ docs/
 17. **Comprobante de pago**: N° = id del pago con 6 dígitos; conceptos = mensualidades y cargos que
    cubrió; incluye "pagado hasta" y saldo pendiente a la fecha en que se genera. Se abre desde la
    ficha (menú del pago), al registrar un pago y en Reportes > Comprobantes de pago.
+18. **Planes** (Configuración): se crean, editan y desactivan (no se borran). Desactivado = ya no
+   se ofrece a clientes nuevos; quien lo tiene lo conserva. Debe quedar al menos uno activo. El
+   precio del plan es solo el sugerido: cambiarlo no cambia el precio de clientes existentes.
+   Desde el alta de cliente se puede "Crear plan nuevo…" (queda en el catálogo).
+19. **Gestión en la lista de clientes**: cada renglón tiene Editar, Suspender/Reactivar y Cancelar
+   servicio visibles (activo → suspender/cancelar; suspendido → reactivar/cancelar; cancelado →
+   reactivar). La ficha muestra los mismos botones. Siempre se pide confirmación con motivo.
 
 ## Convenciones
 - Código y nombres de tablas en español sin acentos (`clientes`, `fecha_pago`).
@@ -138,7 +156,7 @@ docs/
 - Clase de datos de `periodos` = `PeriodoRow` (para no chocar con la clase de dominio).
 - Tras cambiar tablas: `dart run build_runner build --delete-conflicting-outputs`
   y subir `schemaVersion` con su migración (+ prueba en `test/migracion_test.dart`).
-  Versión actual del esquema: **3**. Como Claude no puede correr build_runner, el CI imprime
+  Versión actual del esquema: **4**. Como Claude no puede correr build_runner, el CI imprime
   `database.g.dart` regenerado (gzip+base64, entre `INICIO_BASE64`/`FIN_BASE64`) si está
   desactualizado: se decodifica del log y se sube.
 - Toda lógica de cálculo (vencimientos, adeudos) va en repositorios/servicios con
@@ -167,8 +185,10 @@ docs/
   listas 1240, formularios 760, ficha 960); formularios en tarjetas `SeccionFormulario` con
   `FilaCampos` (dos columnas si caben) y barra de acciones fija abajo. Registrar pago: dos
   columnas (datos | vista previa) si hay ≥ 900 de ancho.
-- **Zoom**: transforma toda la app (MediaQuery dividido entre el zoom + Transform.scale); se guarda
-  por equipo en `configuraciones` (clave `zoom`).
+- **Zoom**: `ZoomInterfaz` dibuja la app al tamaño real ÷ zoom y la escala con `FittedBox` (no usar
+  `Transform.scale` + `OverflowBox`: con zoom < 100 % los clics de la derecha/abajo no llegaban).
+  Se guarda por equipo en `configuraciones` (clave `zoom`).
+- Modales: el botón "atrás" de Android regresa dentro del modal (`NavigatorPopHandler`).
 - **Comprobante tipo cheque**: `conceptosCompactos` agrupa meses consecutivos ("Mensualidades
   sep 2026 – abr 2027 (8)") y junta lo que pase de 4 líneas en "Otros N conceptos".
 - **Reportes**: tarjetas agrupadas (Cobranza; Clientes y cartera); en escritorio la vista previa
@@ -217,6 +237,9 @@ docs/
       cliente en ventanas modales
 - [x] Escritorio: panel lateral, zoom, formularios con ancho limitado, comprobante tipo cheque
       (1/3 de hoja), encabezados de sección y nueva pantalla de Reportes
+- [x] Revisión de botones (zoom < 100 %, "atrás" en modales, Guardar PDF en Windows),
+      Configuración de planes y contratación personalizada, descripciones de Instalaciones y
+      Equipos, botones de gestión visibles en la tabla de clientes
 
 ## Futuro (no hacer todavía)
 Sincronización entre dispositivos, recordatorios por WhatsApp, mapa/GPS de clientes,

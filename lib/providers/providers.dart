@@ -4,6 +4,7 @@ import '../data/db/database.dart';
 import '../data/repositories/clientes_repository.dart';
 import '../data/repositories/dashboard_repository.dart';
 import '../data/repositories/pagos_repository.dart';
+import '../data/repositories/planes_repository.dart';
 import '../data/repositories/reportes_repository.dart';
 import '../data/repositories/vencimientos_repository.dart';
 import '../data/respaldos/respaldo_service.dart';
@@ -22,6 +23,28 @@ final clientesRepositoryProvider = Provider<ClientesRepository>(
 
 final planesProvider = StreamProvider<List<Plan>>(
   (ref) => ref.watch(clientesRepositoryProvider).vigilarPlanes(),
+);
+
+// ----- Planes y contratación (Configuración) -----
+
+final planesRepositoryProvider = Provider<PlanesRepository>(
+  (ref) => PlanesRepository(ref.watch(databaseProvider)),
+);
+
+/// Todos los planes, activos o no (p. ej. para mostrar el plan de un cliente).
+final todosLosPlanesProvider = StreamProvider<List<Plan>>(
+  (ref) => ref.watch(planesRepositoryProvider).vigilarTodos(),
+);
+
+/// Planes con cuántos clientes los tienen (pantalla de Configuración).
+final planesConUsoProvider = StreamProvider.autoDispose<List<PlanConUso>>(
+  (ref) => ref.watch(planesRepositoryProvider).vigilarPlanesConUso(),
+);
+
+/// Contrataciones personalizadas ya usadas, para sugerirlas.
+final contratacionesPersonalizadasProvider =
+    StreamProvider.autoDispose<List<({String detalle, int clientes})>>(
+  (ref) => ref.watch(clientesRepositoryProvider).vigilarContratacionesPersonalizadas(),
 );
 
 final clientesProvider =

@@ -82,7 +82,7 @@ void main() {
 
     await tester.pumpWidget(ProviderScope(
       overrides: [
-        planesProvider.overrideWith((ref) => Stream.value(const [
+        todosLosPlanesProvider.overrideWith((ref) => Stream.value(const [
               Plan(id: 1, nombre: '10 Mbps', velocidadMbps: 10, precioBase: 25000, activo: true),
             ])),
       ],

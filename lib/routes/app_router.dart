@@ -6,6 +6,7 @@ import '../screens/clientes/cliente_detalle_screen.dart';
 import '../screens/clientes/cliente_form_screen.dart';
 import '../screens/clientes/clientes_screen.dart';
 import '../screens/clientes/estado_cuenta_screen.dart';
+import '../screens/configuracion/configuracion_screen.dart';
 import '../screens/inicio/inicio_screen.dart';
 import '../screens/pagos/registrar_pago_screen.dart';
 import '../screens/reportes/comprobantes_screen.dart';
@@ -63,6 +64,10 @@ GoRouter crearRouter() {
             builder: (_, _) => const AdeudosScreen(),
           ),
           GoRoute(
+            path: '/configuracion',
+            builder: (_, _) => const ConfiguracionScreen(),
+          ),
+          GoRoute(
             path: '/respaldos',
             builder: (_, _) => const RespaldosScreen(),
           ),
@@ -115,17 +120,24 @@ class _ConNavegacion extends StatelessWidget {
         iconoSeleccionado: Icons.description),
   ];
 
-  static const _respaldos = DestinoPanel(
-      ruta: '/respaldos',
-      etiqueta: 'Respaldos',
-      icono: Icons.backup_outlined,
-      iconoSeleccionado: Icons.backup);
+  static const _inferiores = [
+    DestinoPanel(
+        ruta: '/respaldos',
+        etiqueta: 'Respaldos',
+        icono: Icons.backup_outlined,
+        iconoSeleccionado: Icons.backup),
+    DestinoPanel(
+        ruta: '/configuracion',
+        etiqueta: 'Configuración',
+        icono: Icons.settings_outlined,
+        iconoSeleccionado: Icons.settings),
+  ];
 
   @override
   Widget build(BuildContext context) {
     final encontrado = _destinos.indexWhere((d) => ubicacion.startsWith(d.ruta));
-    final enRespaldos = ubicacion.startsWith(_respaldos.ruta);
-    final indice = encontrado < 0 ? (enRespaldos ? -1 : 0) : encontrado;
+    final inferior = _inferiores.indexWhere((d) => ubicacion.startsWith(d.ruta));
+    final indice = encontrado < 0 ? (inferior >= 0 ? -1 : 0) : encontrado;
     final ancho = MediaQuery.sizeOf(context).width;
 
     if (ancho >= anchoEscritorio) {
@@ -137,9 +149,9 @@ class _ConNavegacion extends StatelessWidget {
               seleccionado: indice,
               extendido: ancho >= 1180,
               onSeleccionar: (i) => context.go(_destinos[i].ruta),
-              destinoInferior: _respaldos,
-              inferiorSeleccionado: enRespaldos,
-              onInferior: () => context.go(_respaldos.ruta),
+              destinosInferiores: _inferiores,
+              inferiorSeleccionado: inferior,
+              onInferior: (i) => context.go(_inferiores[i].ruta),
             ),
             Expanded(child: child),
           ],
