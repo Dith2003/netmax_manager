@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:netmax_manager/data/db/database.dart';
 import 'package:netmax_manager/domain/clientes.dart';
-import 'package:netmax_manager/main.dart';
 import 'package:netmax_manager/providers/providers.dart';
+import 'package:netmax_manager/screens/clientes/clientes_screen.dart';
 
 /// Prueba de la pantalla de lista con datos simulados (sin base de datos real;
 /// el repositorio ya se prueba en clientes_repository_test.dart).
@@ -36,7 +36,7 @@ void main() {
               .toList()),
         ),
       ],
-      child: const NetMaxApp(),
+      child: const MaterialApp(home: ClientesScreen()),
     ));
     await tester.pumpAndSettle();
 
@@ -58,7 +58,7 @@ void main() {
       overrides: [
         clientesProvider.overrideWith((ref, filtro) => Stream.value(<Cliente>[])),
       ],
-      child: const NetMaxApp(),
+      child: const MaterialApp(home: ClientesScreen()),
     ));
     await tester.pumpAndSettle();
 
