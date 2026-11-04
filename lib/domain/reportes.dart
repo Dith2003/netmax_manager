@@ -7,6 +7,7 @@ import '../data/db/enums.dart';
 /// Un pago vigente con lo que cubrió, para los reportes.
 class FilaPago {
   const FilaPago({
+    this.id,
     required this.fecha,
     required this.cliente,
     required this.monto,
@@ -15,6 +16,8 @@ class FilaPago {
     this.cubre = '',
   });
 
+  /// Id del pago (para abrir su comprobante).
+  final int? id;
   final DateTime fecha;
   final String cliente;
   final int monto;
@@ -101,3 +104,50 @@ class FilaCliente {
   final Mes? pagadoHasta;
   final int adeudo;
 }
+
+/// Datos de un comprobante de pago.
+class DatosComprobante {
+  const DatosComprobante({
+    required this.pagoId,
+    this.folio,
+    required this.fecha,
+    required this.monto,
+    required this.metodo,
+    required this.cancelado,
+    required this.cliente,
+    this.telefono,
+    this.direccion,
+    this.zona,
+    required this.conceptos,
+    this.pagadoHasta,
+    required this.saldoPendiente,
+    this.notas,
+  });
+
+  final int pagoId;
+
+  /// Folio o referencia capturada (p. ej. de una transferencia).
+  final String? folio;
+  final DateTime fecha;
+  final int monto;
+  final MetodoPago metodo;
+  final bool cancelado;
+  final String cliente;
+  final String? telefono;
+  final String? direccion;
+  final String? zona;
+
+  /// Qué cubrió el pago: "Mensualidad noviembre 2026" o el concepto del cargo.
+  final List<({String concepto, int monto})> conceptos;
+  final Mes? pagadoHasta;
+
+  /// Adeudo vencido del cliente a la fecha en que se genera el comprobante.
+  final int saldoPendiente;
+  final String? notas;
+
+  /// Número del comprobante: "000123".
+  String get numero => numeroComprobante(pagoId);
+}
+
+/// Número de comprobante a partir del id del pago: 123 -> "000123".
+String numeroComprobante(int pagoId) => pagoId.toString().padLeft(6, '0');

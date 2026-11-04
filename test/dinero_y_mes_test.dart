@@ -50,4 +50,11 @@ void main() {
       expect(Mes(2026, 11).nombre, 'noviembre 2026');
     });
   });
+
+  test('monto corto para gráficas', () {
+    expect(formatoDineroCorto(85000), r'$850');
+    expect(formatoDineroCorto(485000), r'$4.9 mil');
+    expect(formatoDineroCorto(1000000), r'$10 mil');
+    expect(formatoDineroCorto(250000000), r'$2.5 M');
+  });
 }

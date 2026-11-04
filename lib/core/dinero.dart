@@ -32,3 +32,17 @@ int textoACentavos(String texto) {
   final cent = int.parse((match.group(2) ?? '0').padRight(2, '0'));
   return pesos * 100 + cent;
 }
+
+/// Monto corto para ejes de gráficas: 485000 -> "$4.9 mil", 85000 -> "$850".
+String formatoDineroCorto(int centavos) {
+  final pesos = centavos ~/ 100;
+  if (pesos.abs() < 1000) return '\$$pesos';
+  if (pesos.abs() < 1000000) {
+    final decimas = (pesos + (pesos >= 0 ? 50 : -50)) ~/ 100; // décimas de mil
+    final entero = decimas ~/ 10;
+    final dec = (decimas % 10).abs();
+    return dec == 0 ? '\$$entero mil' : '\$$entero.$dec mil';
+  }
+  final decimas = pesos ~/ 100000;
+  return '\$${decimas ~/ 10}.${decimas % 10} M';
+}

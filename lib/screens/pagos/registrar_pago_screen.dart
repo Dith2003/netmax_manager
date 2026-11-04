@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/dinero.dart';
 import '../../core/etiquetas.dart';
@@ -147,7 +146,7 @@ class _FormularioPagoState extends ConsumerState<_FormularioPago> {
 
     setState(() => _guardando = true);
     try {
-      await ref.read(pagosRepositoryProvider).registrarPago(
+      final pagoId = await ref.read(pagosRepositoryProvider).registrarPago(
             widget.cliente.id,
             DatosPago(
               monto: monto,
@@ -159,7 +158,8 @@ class _FormularioPagoState extends ConsumerState<_FormularioPago> {
           );
       if (!mounted) return;
       mostrarMensaje(context, 'Pago registrado: ${formatoDinero(monto)}');
-      context.pop();
+      // Devuelve el id del pago para mostrar su comprobante (ver modales.dart).
+      Navigator.of(context).pop(pagoId);
     } catch (e) {
       if (!mounted) return;
       setState(() => _guardando = false);

@@ -5,6 +5,7 @@ import '../../domain/clientes.dart';
 import '../../domain/cobranza.dart';
 import '../../domain/reportes.dart';
 import '../db/database.dart';
+import 'pagos_repository.dart';
 import 'vencimientos_repository.dart';
 
 /// Consultas para los reportes. Son lecturas puntuales (no se vigilan).
@@ -69,6 +70,7 @@ class ReportesRepository {
     return [
       for (final p in pagos)
         FilaPago(
+          id: p.pago.id,
           fecha: p.pago.fechaPago,
           cliente: p.cliente,
           monto: p.pago.monto,
@@ -138,5 +140,64 @@ class ReportesRepository {
           adeudo: deudas[c.id] ?? 0,
         ),
     ]..sort((a, b) => normalizar(a.nombre).compareTo(normalizar(b.nombre)));
+  }
+
+  /// Datos del comprobante del pago [pagoId] (null si no existe).
+  /// El saldo pendiente y "pagado hasta" se calculan a la fecha [hoy].
+  Future<DatosComprobante?> comprobante(int pagoId, DateTime hoy) async {
+    final fila = await (_db.select(_db.pagos).join([
+      innerJoin(_db.clientes, _db.clientes.id.equalsExp(_db.pagos.clienteId)),
+    ])
+          ..where(_db.pagos.id.equals(pagoId)))
+        .getSingleOrNull();
+    if (fila == null) return null;
+    final pago = fila.readTable(_db.pagos);
+    final cliente = fila.readTable(_db.clientes);
+
+    final meses = await (_db.select(_db.pagoAplicaciones).join([
+      innerJoin(_db.periodos, _db.periodos.id.equalsExp(_db.pagoAplicaciones.periodoId)),
+    ])
+          ..where(_db.pagoAplicaciones.pagoId.equals(pagoId)))
+        .get();
+    final cargos = await (_db.select(_db.cargoAplicaciones).join([
+      innerJoin(_db.cargos, _db.cargos.id.equalsExp(_db.cargoAplicaciones.cargoId)),
+    ])
+          ..where(_db.cargoAplicaciones.pagoId.equals(pagoId)))
+        .get();
+
+    final conceptosMeses = [
+      for (final f in meses)
+        (
+          mes: Mes.parse(f.readTable(_db.periodos).mes),
+          monto: f.readTable(_db.pagoAplicaciones).monto,
+        ),
+    ]..sort((a, b) => a.mes.compareTo(b.mes));
+
+    final periodos = await PagosRepository(_db).obtenerPeriodos(cliente.id);
+    final cargosVigentes = await _vencimientos.consultaCargos(cliente.id).get();
+
+    return DatosComprobante(
+      pagoId: pago.id,
+      folio: pago.folio,
+      fecha: pago.fechaPago,
+      monto: pago.monto,
+      metodo: pago.metodo,
+      cancelado: pago.cancelado,
+      cliente: cliente.nombre,
+      telefono: cliente.telefono,
+      direccion: cliente.direccion,
+      zona: cliente.zona,
+      conceptos: [
+        for (final m in conceptosMeses) (concepto: 'Mensualidad ${m.mes.nombre}', monto: m.monto),
+        for (final f in cargos)
+          (
+            concepto: f.readTable(_db.cargos).concepto,
+            monto: f.readTable(_db.cargoAplicaciones).monto,
+          ),
+      ],
+      pagadoHasta: pagadoHasta(periodos),
+      saldoPendiente: calcularAdeudo(periodos, hoy, cargos: cargosVigentes).total,
+      notas: pago.notas,
+    );
   }
 }

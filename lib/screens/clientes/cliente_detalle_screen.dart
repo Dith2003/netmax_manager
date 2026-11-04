@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/dinero.dart';
 import '../../core/etiquetas.dart';
@@ -11,41 +10,65 @@ import '../../domain/cobranza.dart';
 import '../../domain/vencimientos.dart';
 import '../../providers/providers.dart';
 import '../../widgets/comunes.dart';
+import '../pagos/comprobante_screen.dart';
 import 'dialogos.dart';
+import 'estado_cuenta_screen.dart';
+import 'modales.dart';
 
 /// Ficha del cliente: datos, estado, instalaciones, equipos e historial.
 class ClienteDetalleScreen extends ConsumerWidget {
-  const ClienteDetalleScreen({super.key, required this.clienteId});
+  const ClienteDetalleScreen({super.key, required this.clienteId, this.enModal = false});
 
   final int clienteId;
+
+  /// Si se muestra dentro de un modal (ver modales.dart): lleva botón de cerrar.
+  final bool enModal;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cliente = ref.watch(clienteProvider(clienteId));
+    AppBar barraVacia() => AppBar(
+          leading: enModal ? const _BotonCerrar() : null,
+          automaticallyImplyLeading: !enModal,
+        );
 
     return cliente.when(
       loading: () => Scaffold(
-        appBar: AppBar(),
+        appBar: barraVacia(),
         body: const Center(child: CircularProgressIndicator()),
       ),
-      error: (e, _) => Scaffold(appBar: AppBar(), body: ErrorVista(e)),
+      error: (e, _) => Scaffold(appBar: barraVacia(), body: ErrorVista(e)),
       data: (c) {
         if (c == null) {
           return Scaffold(
-            appBar: AppBar(),
+            appBar: barraVacia(),
             body: const Center(child: Text('El cliente no existe.')),
           );
         }
-        return _Ficha(cliente: c);
+        return _Ficha(cliente: c, enModal: enModal);
       },
     );
   }
 }
 
+class _BotonCerrar extends StatelessWidget {
+  const _BotonCerrar();
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: 'Cerrar',
+      icon: const Icon(Icons.close),
+      onPressed: () => cerrarModal<void>(context),
+    );
+  }
+}
+
 class _Ficha extends ConsumerWidget {
-  const _Ficha({required this.cliente});
+  const _Ficha({required this.cliente, this.enModal = false});
 
   final Cliente cliente;
+  final bool enModal;
 
   Future<void> _cambiarEstado(BuildContext context, WidgetRef ref, EstadoCliente nuevo) async {
     final motivo = await confirmarCambioEstado(
@@ -76,12 +99,14 @@ class _Ficha extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: enModal ? const _BotonCerrar() : null,
+        automaticallyImplyLeading: !enModal,
         title: Text(cliente.nombre),
         actions: [
           IconButton(
             tooltip: 'Editar',
             icon: const Icon(Icons.edit),
-            onPressed: () => context.push('/clientes/${cliente.id}/editar'),
+            onPressed: () => abrirFormularioCliente(context, clienteId: cliente.id),
           ),
           PopupMenuButton<EstadoCliente>(
             tooltip: 'Cambiar estado',
@@ -101,7 +126,7 @@ class _Ficha extends ConsumerWidget {
       floatingActionButton: cliente.estado == EstadoCliente.cancelado
           ? null
           : FloatingActionButton.extended(
-              onPressed: () => context.push('/clientes/${cliente.id}/pago'),
+              onPressed: () => registrarPagoConComprobante(context, cliente.id),
               icon: const Icon(Icons.payments),
               label: const Text('Registrar pago'),
             ),
@@ -271,7 +296,9 @@ class _SeccionPagos extends ConsumerWidget {
               ? 'Debe ${formatoDinero(adeudo.total)} (${adeudo.descripcion})'
               : 'Al corriente'),
           trailing: const Text('Estado de cuenta ›'),
-          onTap: () => context.push('/clientes/${cliente.id}/estado-cuenta'),
+          onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+            builder: (_) => EstadoCuentaScreen(clienteId: cliente.id),
+          )),
         );
       },
     );
@@ -308,15 +335,19 @@ class _SeccionPagos extends ConsumerWidget {
                       if (p.pago.folio != null) 'Folio ${p.pago.folio}',
                       if (p.pago.cancelado) 'CANCELADO',
                     ].join(' · ')),
-                    trailing: p.pago.cancelado
-                        ? null
-                        : PopupMenuButton<String>(
-                            tooltip: 'Opciones',
-                            onSelected: (_) => _cancelar(context, ref, p.pago),
-                            itemBuilder: (_) => const [
-                              PopupMenuItem(value: 'cancelar', child: Text('Cancelar pago')),
-                            ],
-                          ),
+                    onTap: () => abrirComprobante(context, p.pago.id),
+                    trailing: PopupMenuButton<String>(
+                      tooltip: 'Opciones',
+                      onSelected: (opcion) => opcion == 'comprobante'
+                          ? abrirComprobante(context, p.pago.id)
+                          : _cancelar(context, ref, p.pago),
+                      itemBuilder: (_) => [
+                        const PopupMenuItem(
+                            value: 'comprobante', child: Text('Ver / descargar comprobante')),
+                        if (!p.pago.cancelado)
+                          const PopupMenuItem(value: 'cancelar', child: Text('Cancelar pago')),
+                      ],
+                    ),
                   ),
               ],
             );

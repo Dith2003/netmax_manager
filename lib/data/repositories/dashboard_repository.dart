@@ -23,6 +23,7 @@ class DashboardRepository {
           _db.pagoAplicaciones,
           _db.cargos,
           _db.cargoAplicaciones,
+          _db.historialEstados,
         })
         .watch()
         .asyncMap((_) => calcularResumen(hoy));
@@ -92,6 +93,15 @@ class DashboardRepository {
     ];
     final avance = avanceDelMes(meses, mes);
 
+    // Evolución: altas por fecha de alta y cambios de estado del historial.
+    final altas = await (_db.selectOnly(_db.clientes)..addColumns([_db.clientes.fechaAlta]))
+        .map((r) => r.read(_db.clientes.fechaAlta)!)
+        .get();
+    final cambios = await (_db.select(_db.historialEstados)
+          ..orderBy([(h) => OrderingTerm.asc(h.id)]))
+        .map((h) => (fecha: h.fecha, anterior: h.estadoAnterior, nuevo: h.estadoNuevo))
+        .get();
+
     // Adeudos (meses vencidos + cargos).
     final adeudos = await _vencimientos.vigilarAdeudos(hoy).first;
 
@@ -106,6 +116,8 @@ class DashboardRepository {
       clientesPorEstado: porEstado,
       proximosVencimientos: proximosAVencer(meses, hoy),
       pagosRecientes: recientes(pagos),
+      cobranza: serieCobranza(pagos, mes),
+      actividad: serieActividad(altas: altas, cambios: cambios, hasta: mes),
     );
   }
 }

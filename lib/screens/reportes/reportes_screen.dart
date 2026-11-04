@@ -49,6 +49,13 @@ class ReportesScreen extends StatelessWidget {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.push('/reportes/${t.name}'),
             ),
+          ListTile(
+            leading: const Icon(Icons.receipt),
+            title: const Text('Comprobantes de pago'),
+            subtitle: const Text('Descarga o comparte el comprobante de cada pago'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/reportes/comprobantes'),
+          ),
           const Padding(
             padding: EdgeInsets.all(16),
             child: Text(

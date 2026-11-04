@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/dinero.dart';
 import '../../core/fechas.dart';
 import '../../data/db/enums.dart';
 import '../../providers/providers.dart';
 import '../../widgets/comunes.dart';
+import '../clientes/modales.dart';
 
 /// Clientes con meses vencidos sin pagar, del que más debe al que menos.
 class AdeudosScreen extends ConsumerStatefulWidget {
@@ -93,7 +93,7 @@ class _AdeudosScreenState extends ConsumerState<AdeudosScreen> {
                     ],
                   ],
                 ),
-                onTap: () => context.push('/clientes/${a.clienteId}'),
+                onTap: () => abrirFichaCliente(context, a.clienteId),
               );
             },
           );

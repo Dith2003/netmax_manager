@@ -20,6 +20,7 @@ import 'package:netmax_manager/core/marca.dart';
 import 'package:netmax_manager/core/mes.dart';
 import 'package:netmax_manager/data/db/database.dart';
 import 'package:netmax_manager/data/repositories/pagos_repository.dart';
+import 'package:netmax_manager/data/repositories/reportes_repository.dart';
 import 'package:netmax_manager/data/repositories/vencimientos_repository.dart';
 import 'package:netmax_manager/domain/cobranza.dart';
 import 'package:netmax_manager/domain/dashboard.dart';
@@ -137,6 +138,23 @@ final _resumen = ResumenDashboard(
     for (final (i, c) in _clientes.skip(2).take(4).indexed)
       (clienteId: c.id, cliente: c.nombre, fecha: _hoy.subtract(Duration(days: i)), monto: 25000 * (i + 1)),
   ],
+  cobranza: [
+    for (final (i, m) in ultimosMeses(_mes, 12).indexed)
+      (
+        mes: m,
+        total: i == 11 ? 487500 : 820000 + (i * 37) % 9 * 25000 + i * 15000,
+        pagos: i == 11 ? 17 : 31 + i % 5,
+      ),
+  ],
+  actividad: [
+    for (final (i, m) in ultimosMeses(_mes, 12).indexed)
+      ActividadMes(
+        mes: m,
+        altas: [3, 2, 4, 1, 5, 2, 3, 6, 2, 4, 3, 2][i],
+        suspensiones: [1, 0, 2, 1, 0, 1, 2, 0, 1, 3, 1, 1][i],
+        cancelaciones: [0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0][i],
+      ),
+  ],
 );
 
 final _adeudos = [
@@ -240,6 +258,7 @@ List<Override> _datosSimulados() => [
                 fecha: DateTime(2025, 3, 15)),
           ])),
       adeudosProvider.overrideWith((ref) => Stream.value(_adeudos)),
+      reportesRepositoryProvider.overrideWith((ref) => _ReportesSimulados()),
       vencimientosRepositoryProvider.overrideWith((ref) => throw UnimplementedError()),
     ];
 
@@ -252,6 +271,7 @@ Future<void> _capturar(
   String nombre,
   String ruta, {
   Size tamano = const Size(412, 915),
+  Finder? tocar,
 }) async {
   // En las pruebas las sombras se dibujan como un borde negro; aquí se quieren reales.
   debugDisableShadows = false;
@@ -273,6 +293,10 @@ Future<void> _capturar(
     } else {
       router.push(ruta);
     }
+    await tester.pumpAndSettle();
+  }
+  if (tocar != null) {
+    await tester.tap(tocar.first);
     await tester.pumpAndSettle();
   }
   // Las imágenes del logo se decodifican fuera del reloj simulado.
@@ -307,8 +331,28 @@ void main() {
     testWidgets('captura $nombre', (tester) => _capturar(tester, nombre, ruta),
         skip: !_activo);
   }
+  const escritorio = Size(1366, 900);
   testWidgets('captura 10_inicio_escritorio',
-      (tester) => _capturar(tester, '10_inicio_escritorio', '/inicio', tamano: const Size(1280, 800)),
+      (tester) => _capturar(tester, '10_inicio_escritorio', '/inicio', tamano: const Size(1366, 1500)),
+      skip: !_activo);
+  testWidgets('captura 13_ficha_modal_escritorio',
+      (tester) => _capturar(tester, '13_ficha_modal_escritorio', '/clientes',
+          tamano: escritorio, tocar: find.text('Ana López Martínez')),
+      skip: !_activo);
+  testWidgets('captura 14_nuevo_cliente_modal_escritorio',
+      (tester) => _capturar(tester, '14_nuevo_cliente_modal_escritorio', '/clientes',
+          tamano: escritorio, tocar: find.text('Nuevo cliente')),
+      skip: !_activo);
+  testWidgets('captura 15_ficha_modal_celular',
+      (tester) => _capturar(tester, '15_ficha_modal_celular', '/clientes',
+          tocar: find.text('Beto Ruiz Hernández')),
+      skip: !_activo);
+  testWidgets('captura 16_elegir_cliente_pago',
+      (tester) => _capturar(tester, '16_elegir_cliente_pago', '/inicio',
+          tamano: escritorio, tocar: find.text('Registrar pago')),
+      skip: !_activo);
+  testWidgets('captura 17_comprobantes',
+      (tester) => _capturar(tester, '17_comprobantes', '/reportes/comprobantes'),
       skip: !_activo);
 
   test('PDF de ejemplo', () async {
@@ -330,5 +374,44 @@ void main() {
         estilo: estilo, pagos: pagos, periodo: _mes.nombre, generado: _hoy));
     File('${carpeta.path}/12_pdf_adeudos.pdf')
         .writeAsBytesSync(await pdfAdeudos(estilo: estilo, adeudos: _adeudos, generado: _hoy));
+    final comprobante = DatosComprobante(
+      pagoId: 128,
+      folio: 'TRF-55821',
+      fecha: _hoy,
+      monto: 60000,
+      metodo: MetodoPago.transferencia,
+      cancelado: false,
+      cliente: 'Ana López Martínez',
+      telefono: '7711234567',
+      direccion: 'Calle Hidalgo 1',
+      zona: 'Centro',
+      conceptos: [
+        (concepto: 'Mensualidad ${_mes.anterior().nombre}', monto: 25000),
+        (concepto: 'Reconexión', monto: 10000),
+        (concepto: 'Mensualidad ${_mes.nombre}', monto: 25000),
+      ],
+      pagadoHasta: _mes,
+      saldoPendiente: 0,
+    );
+    File('${carpeta.path}/13_pdf_comprobante.pdf').writeAsBytesSync(
+        await pdfComprobante(estilo: estilo, datos: comprobante, generado: _hoy));
   }, skip: !_activo);
+}
+
+/// Pagos de ejemplo para la lista de comprobantes.
+class _ReportesSimulados extends ReportesRepository {
+  _ReportesSimulados() : super(AppDatabase(NativeDatabase.memory()));
+
+  @override
+  Future<List<FilaPago>> pagosEntre(DateTime desde, DateTime hasta) async => [
+        for (final (i, c) in _clientes.indexed)
+          FilaPago(
+            id: 100 + i,
+            fecha: _hoy.subtract(Duration(days: 6 - i)),
+            cliente: c.nombre,
+            monto: c.precioMensual,
+            metodo: MetodoPago.values[i % 3],
+            cubre: _mes.nombreCorto,
+          ),
+      ];
 }
