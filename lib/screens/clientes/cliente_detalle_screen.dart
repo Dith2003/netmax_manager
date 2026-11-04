@@ -193,7 +193,6 @@ class _AvisoEquipoPrestado extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final equipos = ref.watch(equiposProvider(cliente.id));
-    final permisos = ref.watch(permisosProvider);
     final instalados = equipos.when(
       data: (l) => l
           .where((e) => e.propiedad == PropiedadEquipo.netmax && e.fechaRetiro == null)
@@ -463,6 +462,7 @@ class _SeccionEquipos extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final equipos = ref.watch(equiposProvider(cliente.id));
+    final permisos = ref.watch(permisosProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
