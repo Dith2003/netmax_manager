@@ -2,6 +2,7 @@
 library;
 
 import '../data/db/enums.dart';
+import '../domain/vencimientos.dart';
 
 extension EtiquetaTipoContratacion on TipoContratacion {
   String get etiqueta => switch (this) {
@@ -38,5 +39,15 @@ extension EtiquetaMetodoPago on MetodoPago {
         MetodoPago.transferencia => 'Transferencia',
         MetodoPago.deposito => 'Depósito',
         MetodoPago.otro => 'Otro',
+      };
+}
+
+extension EtiquetaSituacionMes on SituacionMes {
+  String get etiqueta => switch (this) {
+        SituacionMes.pagado => 'Pagado',
+        SituacionMes.cortesia => 'Cortesía',
+        SituacionMes.abonado => 'Con abono',
+        SituacionMes.pendiente => 'Por vencer',
+        SituacionMes.vencido => 'Vencido',
       };
 }

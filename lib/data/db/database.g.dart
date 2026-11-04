@@ -928,6 +928,21 @@ class $ClientesTable extends Clientes with TableInfo<$ClientesTable, Cliente> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _primerMesCobroMeta = const VerificationMeta(
+    'primerMesCobro',
+  );
+  @override
+  late final GeneratedColumn<String> primerMesCobro = GeneratedColumn<String>(
+    'primer_mes_cobro',
+    aliasedName,
+    true,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 7,
+      maxTextLength: 7,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   late final GeneratedColumnWithTypeConverter<EstadoCliente, String> estado =
       GeneratedColumn<String>(
@@ -972,6 +987,7 @@ class $ClientesTable extends Clientes with TableInfo<$ClientesTable, Cliente> {
     diaCorte,
     tipoContratacion,
     fechaAlta,
+    primerMesCobro,
     estado,
     notas,
     creadoEn,
@@ -1058,6 +1074,15 @@ class $ClientesTable extends Clientes with TableInfo<$ClientesTable, Cliente> {
     } else if (isInserting) {
       context.missing(_fechaAltaMeta);
     }
+    if (data.containsKey('primer_mes_cobro')) {
+      context.handle(
+        _primerMesCobroMeta,
+        primerMesCobro.isAcceptableOrUnknown(
+          data['primer_mes_cobro']!,
+          _primerMesCobroMeta,
+        ),
+      );
+    }
     if (data.containsKey('notas')) {
       context.handle(
         _notasMeta,
@@ -1125,6 +1150,10 @@ class $ClientesTable extends Clientes with TableInfo<$ClientesTable, Cliente> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}fecha_alta'],
       )!,
+      primerMesCobro: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}primer_mes_cobro'],
+      ),
       estado: $ClientesTable.$converterestado.fromSql(
         attachedDatabase.typeMapping.read(
           DriftSqlType.string,
@@ -1167,6 +1196,10 @@ class Cliente extends DataClass implements Insertable<Cliente> {
   final int diaCorte;
   final TipoContratacion tipoContratacion;
   final DateTime fechaAlta;
+
+  /// Primer mes que se cobra, 'YYYY-MM' (puede ser el mes del alta, el siguiente u otro).
+  /// Nullable solo por la migración; siempre se llena. Ver domain/vencimientos.dart.
+  final String? primerMesCobro;
   final EstadoCliente estado;
   final String? notas;
   final DateTime creadoEn;
@@ -1182,6 +1215,7 @@ class Cliente extends DataClass implements Insertable<Cliente> {
     required this.diaCorte,
     required this.tipoContratacion,
     required this.fechaAlta,
+    this.primerMesCobro,
     required this.estado,
     this.notas,
     required this.creadoEn,
@@ -1212,6 +1246,9 @@ class Cliente extends DataClass implements Insertable<Cliente> {
       );
     }
     map['fecha_alta'] = Variable<DateTime>(fechaAlta);
+    if (!nullToAbsent || primerMesCobro != null) {
+      map['primer_mes_cobro'] = Variable<String>(primerMesCobro);
+    }
     {
       map['estado'] = Variable<String>(
         $ClientesTable.$converterestado.toSql(estado),
@@ -1243,6 +1280,9 @@ class Cliente extends DataClass implements Insertable<Cliente> {
       diaCorte: Value(diaCorte),
       tipoContratacion: Value(tipoContratacion),
       fechaAlta: Value(fechaAlta),
+      primerMesCobro: primerMesCobro == null && nullToAbsent
+          ? const Value.absent()
+          : Value(primerMesCobro),
       estado: Value(estado),
       notas: notas == null && nullToAbsent
           ? const Value.absent()
@@ -1270,6 +1310,7 @@ class Cliente extends DataClass implements Insertable<Cliente> {
         serializer.fromJson<String>(json['tipoContratacion']),
       ),
       fechaAlta: serializer.fromJson<DateTime>(json['fechaAlta']),
+      primerMesCobro: serializer.fromJson<String?>(json['primerMesCobro']),
       estado: $ClientesTable.$converterestado.fromJson(
         serializer.fromJson<String>(json['estado']),
       ),
@@ -1294,6 +1335,7 @@ class Cliente extends DataClass implements Insertable<Cliente> {
         $ClientesTable.$convertertipoContratacion.toJson(tipoContratacion),
       ),
       'fechaAlta': serializer.toJson<DateTime>(fechaAlta),
+      'primerMesCobro': serializer.toJson<String?>(primerMesCobro),
       'estado': serializer.toJson<String>(
         $ClientesTable.$converterestado.toJson(estado),
       ),
@@ -1314,6 +1356,7 @@ class Cliente extends DataClass implements Insertable<Cliente> {
     int? diaCorte,
     TipoContratacion? tipoContratacion,
     DateTime? fechaAlta,
+    Value<String?> primerMesCobro = const Value.absent(),
     EstadoCliente? estado,
     Value<String?> notas = const Value.absent(),
     DateTime? creadoEn,
@@ -1329,6 +1372,9 @@ class Cliente extends DataClass implements Insertable<Cliente> {
     diaCorte: diaCorte ?? this.diaCorte,
     tipoContratacion: tipoContratacion ?? this.tipoContratacion,
     fechaAlta: fechaAlta ?? this.fechaAlta,
+    primerMesCobro: primerMesCobro.present
+        ? primerMesCobro.value
+        : this.primerMesCobro,
     estado: estado ?? this.estado,
     notas: notas.present ? notas.value : this.notas,
     creadoEn: creadoEn ?? this.creadoEn,
@@ -1352,6 +1398,9 @@ class Cliente extends DataClass implements Insertable<Cliente> {
           ? data.tipoContratacion.value
           : this.tipoContratacion,
       fechaAlta: data.fechaAlta.present ? data.fechaAlta.value : this.fechaAlta,
+      primerMesCobro: data.primerMesCobro.present
+          ? data.primerMesCobro.value
+          : this.primerMesCobro,
       estado: data.estado.present ? data.estado.value : this.estado,
       notas: data.notas.present ? data.notas.value : this.notas,
       creadoEn: data.creadoEn.present ? data.creadoEn.value : this.creadoEn,
@@ -1372,6 +1421,7 @@ class Cliente extends DataClass implements Insertable<Cliente> {
           ..write('diaCorte: $diaCorte, ')
           ..write('tipoContratacion: $tipoContratacion, ')
           ..write('fechaAlta: $fechaAlta, ')
+          ..write('primerMesCobro: $primerMesCobro, ')
           ..write('estado: $estado, ')
           ..write('notas: $notas, ')
           ..write('creadoEn: $creadoEn')
@@ -1392,6 +1442,7 @@ class Cliente extends DataClass implements Insertable<Cliente> {
     diaCorte,
     tipoContratacion,
     fechaAlta,
+    primerMesCobro,
     estado,
     notas,
     creadoEn,
@@ -1411,6 +1462,7 @@ class Cliente extends DataClass implements Insertable<Cliente> {
           other.diaCorte == this.diaCorte &&
           other.tipoContratacion == this.tipoContratacion &&
           other.fechaAlta == this.fechaAlta &&
+          other.primerMesCobro == this.primerMesCobro &&
           other.estado == this.estado &&
           other.notas == this.notas &&
           other.creadoEn == this.creadoEn);
@@ -1428,6 +1480,7 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
   final Value<int> diaCorte;
   final Value<TipoContratacion> tipoContratacion;
   final Value<DateTime> fechaAlta;
+  final Value<String?> primerMesCobro;
   final Value<EstadoCliente> estado;
   final Value<String?> notas;
   final Value<DateTime> creadoEn;
@@ -1443,6 +1496,7 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
     this.diaCorte = const Value.absent(),
     this.tipoContratacion = const Value.absent(),
     this.fechaAlta = const Value.absent(),
+    this.primerMesCobro = const Value.absent(),
     this.estado = const Value.absent(),
     this.notas = const Value.absent(),
     this.creadoEn = const Value.absent(),
@@ -1459,6 +1513,7 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
     required int diaCorte,
     required TipoContratacion tipoContratacion,
     required DateTime fechaAlta,
+    this.primerMesCobro = const Value.absent(),
     this.estado = const Value.absent(),
     this.notas = const Value.absent(),
     this.creadoEn = const Value.absent(),
@@ -1480,6 +1535,7 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
     Expression<int>? diaCorte,
     Expression<String>? tipoContratacion,
     Expression<DateTime>? fechaAlta,
+    Expression<String>? primerMesCobro,
     Expression<String>? estado,
     Expression<String>? notas,
     Expression<DateTime>? creadoEn,
@@ -1496,6 +1552,7 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
       if (diaCorte != null) 'dia_corte': diaCorte,
       if (tipoContratacion != null) 'tipo_contratacion': tipoContratacion,
       if (fechaAlta != null) 'fecha_alta': fechaAlta,
+      if (primerMesCobro != null) 'primer_mes_cobro': primerMesCobro,
       if (estado != null) 'estado': estado,
       if (notas != null) 'notas': notas,
       if (creadoEn != null) 'creado_en': creadoEn,
@@ -1514,6 +1571,7 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
     Value<int>? diaCorte,
     Value<TipoContratacion>? tipoContratacion,
     Value<DateTime>? fechaAlta,
+    Value<String?>? primerMesCobro,
     Value<EstadoCliente>? estado,
     Value<String?>? notas,
     Value<DateTime>? creadoEn,
@@ -1530,6 +1588,7 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
       diaCorte: diaCorte ?? this.diaCorte,
       tipoContratacion: tipoContratacion ?? this.tipoContratacion,
       fechaAlta: fechaAlta ?? this.fechaAlta,
+      primerMesCobro: primerMesCobro ?? this.primerMesCobro,
       estado: estado ?? this.estado,
       notas: notas ?? this.notas,
       creadoEn: creadoEn ?? this.creadoEn,
@@ -1574,6 +1633,9 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
     if (fechaAlta.present) {
       map['fecha_alta'] = Variable<DateTime>(fechaAlta.value);
     }
+    if (primerMesCobro.present) {
+      map['primer_mes_cobro'] = Variable<String>(primerMesCobro.value);
+    }
     if (estado.present) {
       map['estado'] = Variable<String>(
         $ClientesTable.$converterestado.toSql(estado.value),
@@ -1602,6 +1664,7 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
           ..write('diaCorte: $diaCorte, ')
           ..write('tipoContratacion: $tipoContratacion, ')
           ..write('fechaAlta: $fechaAlta, ')
+          ..write('primerMesCobro: $primerMesCobro, ')
           ..write('estado: $estado, ')
           ..write('notas: $notas, ')
           ..write('creadoEn: $creadoEn')
@@ -6003,6 +6066,7 @@ typedef $$ClientesTableCreateCompanionBuilder = ClientesCompanion Function({
   required int diaCorte,
   required TipoContratacion tipoContratacion,
   required DateTime fechaAlta,
+  Value<String?> primerMesCobro,
   Value<EstadoCliente> estado,
   Value<String?> notas,
   Value<DateTime> creadoEn,
@@ -6019,6 +6083,7 @@ typedef $$ClientesTableUpdateCompanionBuilder = ClientesCompanion Function({
   Value<int> diaCorte,
   Value<TipoContratacion> tipoContratacion,
   Value<DateTime> fechaAlta,
+  Value<String?> primerMesCobro,
   Value<EstadoCliente> estado,
   Value<String?> notas,
   Value<DateTime> creadoEn,
@@ -6197,6 +6262,11 @@ class $$ClientesTableFilterComposer
 
   ColumnFilters<DateTime> get fechaAlta => $composableBuilder(
     column: $table.fechaAlta,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get primerMesCobro => $composableBuilder(
+    column: $table.primerMesCobro,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6424,6 +6494,11 @@ class $$ClientesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get primerMesCobro => $composableBuilder(
+    column: $table.primerMesCobro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get estado => $composableBuilder(
     column: $table.estado,
     builder: (column) => ColumnOrderings(column),
@@ -6508,6 +6583,11 @@ class $$ClientesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get fechaAlta =>
       $composableBuilder(column: $table.fechaAlta, builder: (column) => column);
+
+  GeneratedColumn<String> get primerMesCobro => $composableBuilder(
+    column: $table.primerMesCobro,
+    builder: (column) => column,
+  );
 
   GeneratedColumnWithTypeConverter<EstadoCliente, String> get estado =>
       $composableBuilder(column: $table.estado, builder: (column) => column);
@@ -6713,6 +6793,7 @@ class $$ClientesTableTableManager
                 Value<int> diaCorte = const Value.absent(),
                 Value<TipoContratacion> tipoContratacion = const Value.absent(),
                 Value<DateTime> fechaAlta = const Value.absent(),
+                Value<String?> primerMesCobro = const Value.absent(),
                 Value<EstadoCliente> estado = const Value.absent(),
                 Value<String?> notas = const Value.absent(),
                 Value<DateTime> creadoEn = const Value.absent(),
@@ -6728,6 +6809,7 @@ class $$ClientesTableTableManager
                 diaCorte: diaCorte,
                 tipoContratacion: tipoContratacion,
                 fechaAlta: fechaAlta,
+                primerMesCobro: primerMesCobro,
                 estado: estado,
                 notas: notas,
                 creadoEn: creadoEn,
@@ -6745,6 +6827,7 @@ class $$ClientesTableTableManager
                 required int diaCorte,
                 required TipoContratacion tipoContratacion,
                 required DateTime fechaAlta,
+                Value<String?> primerMesCobro = const Value.absent(),
                 Value<EstadoCliente> estado = const Value.absent(),
                 Value<String?> notas = const Value.absent(),
                 Value<DateTime> creadoEn = const Value.absent(),
@@ -6760,6 +6843,7 @@ class $$ClientesTableTableManager
                 diaCorte: diaCorte,
                 tipoContratacion: tipoContratacion,
                 fechaAlta: fechaAlta,
+                primerMesCobro: primerMesCobro,
                 estado: estado,
                 notas: notas,
                 creadoEn: creadoEn,

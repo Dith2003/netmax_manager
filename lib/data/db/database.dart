@@ -48,6 +48,9 @@ class Clientes extends Table {
   IntColumn get diaCorte => integer().check(diaCorte.isBetweenValues(1, 28))();
   TextColumn get tipoContratacion => textEnum<TipoContratacion>()();
   DateTimeColumn get fechaAlta => dateTime()();
+  /// Primer mes que se cobra, 'YYYY-MM' (puede ser el mes del alta, el siguiente u otro).
+  /// Nullable solo por la migración; siempre se llena. Ver domain/vencimientos.dart.
+  TextColumn get primerMesCobro => text().nullable().withLength(min: 7, max: 7)();
   TextColumn get estado => textEnum<EstadoCliente>()
       .withDefault(Constant(EstadoCliente.activo.name))();
   TextColumn get notas => text().nullable()();
@@ -178,13 +181,22 @@ class AppDatabase extends _$AppDatabase {
       : super(executor ?? driftDatabase(name: 'netmax'));
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) async {
           await m.createAll();
           await _datosIniciales();
+        },
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            // v2: primer mes de cobro. Para clientes existentes = mes de la fecha de alta
+            // (la regla que se usaba hasta ahora).
+            await m.addColumn(clientes, clientes.primerMesCobro);
+            await customStatement(
+                'UPDATE clientes SET primer_mes_cobro = substr(fecha_alta, 1, 7)');
+          }
         },
         beforeOpen: (details) async {
           await customStatement('PRAGMA foreign_keys = ON');

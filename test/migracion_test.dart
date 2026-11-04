@@ -1,0 +1,47 @@
+import 'package:drift/native.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:netmax_manager/data/db/database.dart';
+
+/// Simula una base de datos creada con la versión 1 (Sprint 1–3) y comprueba
+/// que al abrirla con la versión actual se migra sin perder datos.
+void main() {
+  test('v1 → v2: agrega primer_mes_cobro con el mes de la fecha de alta', () async {
+    final db = AppDatabase(NativeDatabase.memory(setup: (raw) {
+      // Solo hace falta la tabla que cambia en la migración.
+      raw.execute('''
+        CREATE TABLE clientes (
+          id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+          nombre TEXT NOT NULL,
+          telefono TEXT NULL,
+          direccion TEXT NULL,
+          zona TEXT NULL,
+          referencia TEXT NULL,
+          plan_id INTEGER NOT NULL,
+          precio_mensual INTEGER NOT NULL,
+          dia_corte INTEGER NOT NULL,
+          tipo_contratacion TEXT NOT NULL,
+          fecha_alta TEXT NOT NULL,
+          estado TEXT NOT NULL DEFAULT 'activo',
+          notas TEXT NULL,
+          creado_en TEXT NOT NULL
+        )
+      ''');
+      raw.execute('''
+        INSERT INTO clientes (nombre, plan_id, precio_mensual, dia_corte,
+          tipo_contratacion, fecha_alta, creado_en)
+        VALUES ('Ana', 1, 25000, 5, 'equipoPropio', '2025-03-15T00:00:00.000',
+          '2025-03-15T00:00:00.000')
+      ''');
+      raw.userVersion = 1;
+    }));
+    addTearDown(db.close);
+
+    final clientes = await db.select(db.clientes).get();
+    expect(clientes.single.nombre, 'Ana');
+    expect(clientes.single.primerMesCobro, '2025-03');
+    expect(clientes.single.fechaAlta.year, 2025);
+
+    final version = await db.customSelect('PRAGMA user_version').getSingle();
+    expect(version.read<int>('user_version'), 2);
+  });
+}

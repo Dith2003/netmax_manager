@@ -25,17 +25,19 @@ lib/
   core/          # dinero.dart (centavos), mes.dart (clase Mes 'YYYY-MM'), fechas.dart,
                  # etiquetas.dart (textos en español de los enums)
   domain/        # reglas puras sin BD: cobranza.dart (aplicarPago, calcularAdeudo, pagadoHasta),
-                 # clientes.dart (búsqueda sin acentos, validaciones de formulario)
+                 # clientes.dart (búsqueda sin acentos, validaciones de formulario),
+                 # vencimientos.dart (primer mes de cobro, mesesPorGenerar, estadoEnFecha)
   data/
     db/          # database.dart (tablas drift + AppDatabase), enums.dart
     repositories/  # clientes_repository.dart (clientes, estados, instalaciones, equipos)
                    # pagos_repository.dart (saldos por mes, registrar/cancelar pago, historial)
+                   # vencimientos_repository.dart (generar meses, cortesía, agregar/quitar mes, adeudos)
   providers/     # providers.dart: databaseProvider (se inyecta en main) y StreamProviders
   screens/       # una carpeta por módulo: clientes/ (lista, formulario, ficha, diálogos),
-                 # pagos/ (registrar pago con vista previa del reparto)
+                 # estado_cuenta_screen.dart; pagos/ (registrar pago); adeudos/ (lista de adeudos)
   widgets/       # comunes.dart (EstadoChip, ErrorVista, SeccionTitulo, mostrarMensaje)
-  routes/        # app_router.dart (go_router): /clientes, /clientes/nuevo, /clientes/:id, /clientes/:id/editar,
-                 # /clientes/:id/pago
+  routes/        # app_router.dart (go_router, ShellRoute con barra Clientes/Adeudos):
+                 # /clientes, /clientes/nuevo, /clientes/:id, /clientes/:id/{editar,pago,estado-cuenta}, /adeudos
 docs/
   schema.sql     # referencia original; la fuente de verdad es lib/data/db/database.dart
 ```
@@ -54,9 +56,18 @@ docs/
    Si el equipo es prestado, debe quedar registrado en `equipos` para su recuperación.
 7. Los montos se guardan en **centavos (enteros)**, nunca en `double`.
 8. Nada se borra físicamente: clientes y pagos se cancelan/desactivan (auditoría).
-9. El primer mes de servicio es el mes de la **fecha de alta**. Un pago crea los meses
-   adelantados que necesite (máximo 24 por pago). Los pagos cancelados no cuentan en saldos;
-   sus meses vuelven a quedar pendientes. No se registran pagos a clientes cancelados.
+9. Cada cliente tiene un **primer mes de cobro** (`clientes.primer_mes_cobro`): el mes del alta,
+   el siguiente (sugerido) u otro. Un pago crea los meses adelantados que necesite (máximo 24
+   por pago). Los pagos cancelados no cuentan en saldos; sus meses vuelven a quedar pendientes.
+   No se registran pagos a clientes cancelados.
+10. **Generación de meses**: desde el primer mes de cobro hasta el mes actual, solo los meses
+   en que el cliente estaba **activo** en la fecha de vencimiento (según `historial_estados`;
+   sin historial previo = activo). Suspendidos/cancelados no generan meses, pero siguen debiendo
+   lo vencido. Se genera al abrir la app, al abrir Adeudos, al crear/editar/cambiar estado y
+   antes de registrar un pago. Los repositorios reciben `ahora` para fijar la fecha en pruebas.
+11. **Cortesía** se marca a mano por mes (no si el mes tiene pagos vigentes). Se puede **agregar
+   un mes a mano** (cobro manual, p. ej. a un suspendido) y **quitar un mes** que nunca tuvo pagos.
+   Si el primer mes de cobro se mueve a después, se quitan los meses anteriores sin pagos.
 
 ## Convenciones
 - Código y nombres de tablas en español sin acentos (`clientes`, `fecha_pago`).
@@ -66,7 +77,10 @@ docs/
   guardados con `textEnum` (nombre camelCase: `equipoPrestado`).
 - Clase de datos de `periodos` = `PeriodoRow` (para no chocar con la clase de dominio).
 - Tras cambiar tablas: `dart run build_runner build --delete-conflicting-outputs`
-  y subir `schemaVersion` con su migración.
+  y subir `schemaVersion` con su migración (+ prueba en `test/migracion_test.dart`).
+  Versión actual del esquema: **2**. Como Claude no puede correr build_runner, el CI imprime
+  `database.g.dart` regenerado (gzip+base64, entre `INICIO_BASE64`/`FIN_BASE64`) si está
+  desactualizado: se decodifica del log y se sube.
 - Toda lógica de cálculo (vencimientos, adeudos) va en repositorios/servicios con
   pruebas unitarias, nunca en los widgets.
 - Antes de dar algo por terminado: `flutter analyze` y `flutter test` sin errores.
@@ -87,7 +101,7 @@ docs/
 - [x] Sprint 1: proyecto Flutter + base de datos drift + lógica de cobranza con pruebas
 - [x] Sprint 2: Clientes (+ instalaciones y equipos, historial de estados)
 - [x] Sprint 3: Pagos (reparto automático con vista previa, abonos, adelantos, cancelación)
-- [ ] Sprint 4: Vencimientos y adeudos
+- [x] Sprint 4: Vencimientos y adeudos (primer mes configurable, generación, cortesía, estado de cuenta)
 - [ ] Sprint 5: Dashboard
 - [ ] Sprint 6: Reportes
 - [ ] Sprint 7: Respaldos (exportar/importar archivo .db)

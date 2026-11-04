@@ -5,9 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../../core/dinero.dart';
 import '../../core/etiquetas.dart';
 import '../../core/fechas.dart';
+import '../../core/mes.dart';
 import '../../data/db/database.dart';
 import '../../data/repositories/clientes_repository.dart';
 import '../../domain/clientes.dart';
+import '../../domain/vencimientos.dart';
 import '../../providers/providers.dart';
 import '../../widgets/comunes.dart';
 
@@ -37,6 +39,10 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
   late int _diaCorte;
   TipoContratacion _tipo = TipoContratacion.equipoPropio;
   late DateTime _fechaAlta;
+  late Mes _primerMes;
+
+  /// Si el usuario eligió el primer mes a mano, ya no se cambia al mover la fecha de alta.
+  bool _primerMesElegido = false;
 
   /// Si el usuario escribió el precio a mano, ya no se reemplaza al cambiar de plan.
   bool _precioEditado = false;
@@ -48,6 +54,7 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
     super.initState();
     _fechaAlta = soloFecha(DateTime.now());
     _diaCorte = diaCorteSugerido(_fechaAlta);
+    _primerMes = primerMesSugerido(_fechaAlta);
     if (widget.esEdicion) {
       _cargando = true;
       _cargarCliente();
@@ -69,6 +76,8 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
       _diaCorte = c.diaCorte;
       _tipo = c.tipoContratacion;
       _fechaAlta = c.fechaAlta;
+      _primerMes = primerMesDeCobro(primerMesCobro: c.primerMesCobro, fechaAlta: c.fechaAlta);
+      _primerMesElegido = true;
       _precioEditado = true;
     }
     setState(() => _cargando = false);
@@ -103,7 +112,14 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
       firstDate: DateTime(2015),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
-    if (fecha != null) setState(() => _fechaAlta = soloFecha(fecha));
+    if (fecha == null) return;
+    setState(() {
+      _fechaAlta = soloFecha(fecha);
+      final opciones = opcionesPrimerMes(_fechaAlta, DateTime.now());
+      if (!_primerMesElegido || !opciones.contains(_primerMes)) {
+        _primerMes = primerMesSugerido(_fechaAlta);
+      }
+    });
   }
 
   Future<void> _guardar() async {
@@ -125,6 +141,7 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
       diaCorte: _diaCorte,
       tipoContratacion: _tipo,
       fechaAlta: _fechaAlta,
+      primerMesCobro: _primerMes,
       notas: textoONull(_notas.text),
     );
     final repo = ref.read(clientesRepositoryProvider);
@@ -163,6 +180,40 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
               error: (e, _) => ErrorVista(e),
               data: _formulario,
             ),
+    );
+  }
+
+  Widget _campoPrimerMes() {
+    final opciones = opcionesPrimerMes(_fechaAlta, DateTime.now());
+    if (!opciones.contains(_primerMes)) opciones.add(_primerMes);
+    opciones.sort();
+    final alta = Mes.deFecha(_fechaAlta);
+    String etiqueta(Mes m) {
+      if (m == alta) return '${m.nombre} (mes del alta)';
+      if (m == alta.siguiente()) return '${m.nombre} (mes siguiente)';
+      return m.nombre;
+    }
+
+    return DropdownButtonFormField<Mes>(
+      // La clave fuerza a reconstruir el campo cuando cambia la fecha de alta.
+      key: ValueKey('primer-mes-$alta-$_primerMes'),
+      initialValue: _primerMes,
+      decoration: const InputDecoration(
+        labelText: 'Primer mes de cobro *',
+        helperText: 'Desde este mes se generan los cobros mensuales',
+        border: OutlineInputBorder(),
+      ),
+      items: [
+        for (final m in opciones) DropdownMenuItem(value: m, child: Text(etiqueta(m))),
+      ],
+      onChanged: (m) {
+        if (m != null) {
+          setState(() {
+            _primerMes = m;
+            _primerMesElegido = true;
+          });
+        }
+      },
     );
   }
 
@@ -314,6 +365,8 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
               child: Text(formatoFecha(_fechaAlta)),
             ),
           ),
+          espacio,
+          _campoPrimerMes(),
           espacio,
           TextFormField(
             controller: _notas,

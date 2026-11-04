@@ -1,5 +1,6 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:netmax_manager/core/mes.dart';
 import 'package:netmax_manager/data/db/database.dart';
 import 'package:netmax_manager/data/repositories/clientes_repository.dart';
 
@@ -10,7 +11,7 @@ void main() {
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
-    repo = ClientesRepository(db);
+    repo = ClientesRepository(db, ahora: () => DateTime(2026, 11, 3, 12));
     planId = (await repo.vigilarPlanes().first).first.id;
   });
 
@@ -26,6 +27,7 @@ void main() {
         diaCorte: 5,
         tipoContratacion: tipo,
         fechaAlta: DateTime(2026, 11, 3),
+        primerMesCobro: Mes(2026, 11),
       );
 
   test('la base de datos nueva trae el plan de 10 Mbps a \$250', () async {
@@ -57,6 +59,7 @@ void main() {
         diaCorte: 10,
         tipoContratacion: TipoContratacion.equipoPrestado,
         fechaAlta: DateTime(2026, 11, 3),
+        primerMesCobro: Mes(2026, 11),
       ),
     );
     final c = await repo.obtenerCliente(id);
