@@ -22,7 +22,11 @@ class _AdeudosScreenState extends ConsumerState<AdeudosScreen> {
     super.initState();
     // Por si la app lleva días abierta: genera los meses que ya correspondan.
     Future.microtask(() async {
-      await ref.read(vencimientosRepositoryProvider).generarTodos(DateTime.now());
+      try {
+        await ref.read(vencimientosRepositoryProvider).generarTodos(DateTime.now());
+      } catch (e) {
+        debugPrint('No se pudieron generar los vencimientos: $e');
+      }
     });
   }
 
