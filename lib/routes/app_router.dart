@@ -10,6 +10,7 @@ import '../screens/inicio/inicio_screen.dart';
 import '../screens/pagos/registrar_pago_screen.dart';
 import '../screens/reportes/reporte_screen.dart';
 import '../screens/reportes/reportes_screen.dart';
+import '../screens/respaldos/respaldos_screen.dart';
 
 /// Rutas de la app. La pantalla inicial es el resumen (Inicio).
 GoRouter crearRouter() {
@@ -57,6 +58,10 @@ GoRouter crearRouter() {
           GoRoute(
             path: '/adeudos',
             builder: (_, _) => const AdeudosScreen(),
+          ),
+          GoRoute(
+            path: '/respaldos',
+            builder: (_, _) => const RespaldosScreen(),
           ),
           GoRoute(
             path: '/reportes',

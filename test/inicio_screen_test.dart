@@ -45,6 +45,7 @@ void main() {
       overrides: [
         resumenProvider.overrideWith((ref) => Stream.value(resumen)),
         clientesProvider.overrideWith((ref, filtro) => Stream.value(<Cliente>[])),
+        ultimoRespaldoProvider.overrideWith((ref) => Stream.value(null)),
       ],
       child: const NetMaxApp(),
     ));
@@ -61,6 +62,8 @@ void main() {
     expect(find.text('Beto Ruiz'), findsOneWidget);
     expect(find.text(r'$150.00'), findsOneWidget);
     expect(find.text('Ana López'), findsOneWidget);
+    // Nunca se ha hecho un respaldo: aparece el recordatorio.
+    expect(find.text('Haz un respaldo de tu información'), findsOneWidget);
 
     // Navegar a Clientes con la barra inferior.
     await tester.tap(find.text('Clientes').last);
