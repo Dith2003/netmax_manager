@@ -56,7 +56,10 @@ class EncabezadoSeccion extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-      child: Wrap(
+      // Ancho completo: así el título queda a la izquierda y las acciones a la derecha.
+      child: SizedBox(
+        width: double.infinity,
+        child: Wrap(
         alignment: WrapAlignment.spaceBetween,
         crossAxisAlignment: WrapCrossAlignment.center,
         spacing: 16,
@@ -93,6 +96,7 @@ class EncabezadoSeccion extends StatelessWidget {
           if (acciones.isNotEmpty)
             Wrap(spacing: 12, runSpacing: 8, children: acciones),
         ],
+        ),
       ),
     );
   }
