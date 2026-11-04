@@ -1,12 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdf/widgets.dart' as pw;
 
 import '../data/db/database.dart';
 import '../data/repositories/clientes_repository.dart';
 import '../data/repositories/dashboard_repository.dart';
 import '../data/repositories/pagos_repository.dart';
+import '../data/repositories/reportes_repository.dart';
 import '../data/repositories/vencimientos_repository.dart';
 import '../domain/cobranza.dart';
 import '../domain/dashboard.dart';
+import '../reportes/pdf_reportes.dart';
 
 /// La base de datos se crea en main() y se inyecta con overrideWithValue.
 final databaseProvider = Provider<AppDatabase>(
@@ -87,3 +90,12 @@ final dashboardRepositoryProvider = Provider<DashboardRepository>(
 final resumenProvider = StreamProvider.autoDispose<ResumenDashboard>(
   (ref) => ref.watch(dashboardRepositoryProvider).vigilarResumen(DateTime.now()),
 );
+
+// ----- Reportes -----
+
+final reportesRepositoryProvider = Provider<ReportesRepository>(
+  (ref) => ReportesRepository(ref.watch(databaseProvider)),
+);
+
+/// Tipografía de los PDF (se carga una vez).
+final temaPdfProvider = FutureProvider<pw.ThemeData>((ref) => cargarTemaPdf());

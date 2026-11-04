@@ -27,7 +27,8 @@ lib/
   domain/        # reglas puras sin BD: cobranza.dart (aplicarPago, calcularAdeudo, pagadoHasta),
                  # clientes.dart (búsqueda sin acentos, validaciones de formulario),
                  # vencimientos.dart (primer mes de cobro, mesesPorGenerar, estadoEnFecha),
-                 # dashboard.dart (cobrado del mes, avance del mes, próximos vencimientos)
+                 # dashboard.dart (cobrado del mes, avance del mes, próximos vencimientos),
+                 # reportes.dart (FilaPago, ingresosPorMes, FilaCliente)
   data/
     db/          # database.dart (tablas drift + AppDatabase), enums.dart
     repositories/  # clientes_repository.dart (clientes, estados, instalaciones, equipos)
@@ -35,14 +36,18 @@ lib/
                    # vencimientos_repository.dart (generar meses, cortesía, agregar/quitar mes,
                    #   cargos extra, adeudos)
                    # dashboard_repository.dart (resumen de inicio; se recalcula con consulta testigo)
+                   # reportes_repository.dart (pagos de un periodo, ingresos, adeudos, clientes)
+  reportes/      # pdf_reportes.dart: PDFs carta con encabezado/pie (pdf); fuente Open Sans en
+                 # assets/fonts (OFL) cargada con cargarTemaPdf()
   providers/     # providers.dart: databaseProvider (se inyecta en main) y StreamProviders
   screens/       # una carpeta por módulo: clientes/ (lista, formulario, ficha, diálogos),
                  # estado_cuenta_screen.dart; pagos/ (registrar pago); adeudos/ (lista de adeudos);
-                 # inicio/ (dashboard: indicadores, medidor del mes, vencimientos, pagos recientes)
+                 # inicio/ (dashboard: indicadores, medidor del mes, vencimientos, pagos recientes);
+                 # reportes/ (lista de reportes y vista previa PdfPreview: imprimir/compartir)
   widgets/       # comunes.dart (EstadoChip, ErrorVista, SeccionTitulo, mostrarMensaje)
-  routes/        # app_router.dart (go_router, ShellRoute con barra Inicio/Clientes/Adeudos):
+  routes/        # app_router.dart (go_router, ShellRoute con barra Inicio/Clientes/Adeudos/Reportes):
                  # /inicio (arranque), /clientes, /clientes/nuevo, /clientes/:id,
-                 # /clientes/:id/{editar,pago,estado-cuenta}, /adeudos
+                 # /clientes/:id/{editar,pago,estado-cuenta}, /adeudos, /reportes, /reportes/:tipo
 docs/
   schema.sql     # referencia original; la fuente de verdad es lib/data/db/database.dart
 ```
@@ -82,6 +87,9 @@ docs/
    recibido); *mensualidades del mes* = meses del mes actual sin cortesía vs lo pagado de ellos;
    *por cobrar* = adeudo vencido total (meses + cargos); *próximos vencimientos* = meses con saldo
    de clientes activos que vencen de hoy a 7 días.
+14. **Reportes (PDF)**: ingresos por mes de un año (por fecha de pago, desglose por método),
+   pagos recibidos en un mes (con lo que cubrió cada uno), clientes con adeudo y lista de
+   clientes. Solo cuentan pagos vigentes. Las fechas se filtran en Dart (se guardan con zona).
 
 ## Convenciones
 - Código y nombres de tablas en español sin acentos (`clientes`, `fecha_pago`).
@@ -107,6 +115,8 @@ docs/
   de texto (no de serie); estados con ícono + texto, nunca solo color; medidor con la pista en un
   tono claro del mismo color (`primary` sobre `primaryContainer`).
 - Historial y fechas automáticas: guardar `DateTime.now()` explícito (no `currentDateAndTime`, que es UTC).
+- PDF: `pdf` + `printing` (`PdfPreview` no se puede probar en widget tests: probar la generación
+  de bytes con `cargarTemaPdf()` tras `TestWidgetsFlutterBinding.ensureInitialized()`).
 
 ## Flujo de trabajo
 - Cada sprint en una rama (`sprint-N/nombre`) con Pull Request hacia `main`. La dueña revisa,
@@ -121,7 +131,7 @@ docs/
 - [x] Sprint 4: Vencimientos y adeudos (primer mes configurable, generación, cortesía, estado de cuenta)
 - [x] Sprint 4b: Cargos extra (equipo no devuelto, reconexión, etc.)
 - [x] Sprint 5: Dashboard (pantalla de inicio)
-- [ ] Sprint 6: Reportes
+- [x] Sprint 6: Reportes (PDF: ingresos, pagos, adeudos, clientes)
 - [ ] Sprint 7: Respaldos (exportar/importar archivo .db)
 
 ## Futuro (no hacer todavía)
