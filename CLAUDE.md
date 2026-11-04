@@ -135,7 +135,7 @@ docs/
   tono claro del mismo color (`primary` sobre `primaryContainer`).
 - Historial y fechas automáticas: guardar `DateTime.now()` explícito (no `currentDateAndTime`, que es UTC).
 - PDF: `pdf` + `printing` (`PdfPreview` no se puede probar en widget tests: probar la generación
-  de bytes con `cargarTemaPdf()` tras `TestWidgetsFlutterBinding.ensureInitialized()`).
+  de bytes con `cargarEstiloPdf()` tras `TestWidgetsFlutterBinding.ensureInitialized()`).
 
 ## Identidad visual (NET_MAX)
 - Nombre visible: **NET_MAX** (nunca "NetMAX"). Lema: "Contigo más lejos, siempre con **Fe**".
