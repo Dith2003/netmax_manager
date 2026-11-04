@@ -69,3 +69,8 @@ final vencimientosRepositoryProvider = Provider<VencimientosRepository>(
 final adeudosProvider = StreamProvider.autoDispose<List<AdeudoCliente>>(
   (ref) => ref.watch(vencimientosRepositoryProvider).vigilarAdeudos(DateTime.now()),
 );
+
+/// Cargos extra vigentes del cliente con lo pagado de cada uno.
+final cargosProvider = StreamProvider.autoDispose.family<List<CargoSaldo>, int>(
+  (ref, clienteId) => ref.watch(vencimientosRepositoryProvider).vigilarCargos(clienteId),
+);

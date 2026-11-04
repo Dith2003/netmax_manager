@@ -68,12 +68,11 @@ class _AdeudosScreenState extends ConsumerState<AdeudosScreen> {
               return ListTile(
                 leading: CircleAvatar(
                   backgroundColor: Theme.of(context).colorScheme.errorContainer,
-                  child: Text('${a.adeudo.meses}'),
+                  child: Text('${a.adeudo.meses + a.adeudo.cargos}'),
                 ),
                 title: Text(a.nombre),
                 subtitle: Text([
-                  '${a.adeudo.meses} ${a.adeudo.meses == 1 ? 'mes' : 'meses'}'
-                      ' desde ${formatoFechaCorta(a.adeudo.vencidoDesde!)}',
+                  '${a.adeudo.descripcion} desde ${formatoFechaCorta(a.adeudo.vencidoDesde!)}',
                   if (a.zona != null) a.zona!,
                   if (a.telefono != null) a.telefono!,
                 ].join(' · ')),

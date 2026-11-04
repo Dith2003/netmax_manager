@@ -126,6 +126,33 @@ class PagoAplicaciones extends Table {
   Set<Column> get primaryKey => {pagoId, periodoId};
 }
 
+/// Cargo extra a un cliente (p. ej. equipo no devuelto, reconexión).
+/// Se debe desde su fecha y los pagos lo cubren junto con los meses.
+@DataClassName('Cargo')
+class Cargos extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get clienteId => integer().references(Clientes, #id)();
+  DateTimeColumn get fecha => dateTime()();
+  TextColumn get concepto => text()();
+  IntColumn get monto => integer().check(monto.isBiggerThanValue(0))();
+  /// Equipo relacionado (si el cargo es por equipo no devuelto).
+  IntColumn get equipoId => integer().nullable().references(Equipos, #id)();
+  BoolColumn get cancelado => boolean().withDefault(const Constant(false))();
+  TextColumn get notas => text().nullable()();
+  DateTimeColumn get creadoEn => dateTime()();
+}
+
+/// Qué parte de cada pago se aplicó a qué cargo extra.
+@DataClassName('CargoAplicacion')
+class CargoAplicaciones extends Table {
+  IntColumn get pagoId => integer().references(Pagos, #id)();
+  IntColumn get cargoId => integer().references(Cargos, #id)();
+  IntColumn get monto => integer().check(monto.isBiggerThanValue(0))();
+
+  @override
+  Set<Column> get primaryKey => {pagoId, cargoId};
+}
+
 @DataClassName('HistorialEstado')
 class HistorialEstados extends Table {
   IntColumn get id => integer().autoIncrement()();
@@ -170,6 +197,8 @@ class Configuraciones extends Table {
   Periodos,
   Pagos,
   PagoAplicaciones,
+  Cargos,
+  CargoAplicaciones,
   HistorialEstados,
   Gastos,
   Configuraciones,
@@ -181,7 +210,7 @@ class AppDatabase extends _$AppDatabase {
       : super(executor ?? driftDatabase(name: 'netmax'));
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -196,6 +225,11 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(clientes, clientes.primerMesCobro);
             await customStatement(
                 'UPDATE clientes SET primer_mes_cobro = substr(fecha_alta, 1, 7)');
+          }
+          if (from < 3) {
+            // v3: cargos extra.
+            await m.createTable(cargos);
+            await m.createTable(cargoAplicaciones);
           }
         },
         beforeOpen: (details) async {

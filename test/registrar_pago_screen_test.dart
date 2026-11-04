@@ -29,6 +29,9 @@ void main() {
     ),
   ];
 
+  var cargos = <CargoSaldo>[];
+  setUp(() => cargos = []);
+
   Future<void> abrirPantalla(WidgetTester tester) async {
     // Pantalla alta para que toda la lista quede visible.
     tester.view.physicalSize = const Size(1000, 2400);
@@ -39,6 +42,7 @@ void main() {
       overrides: [
         clienteProvider.overrideWith((ref, id) => Stream.value(cliente)),
         periodosProvider.overrideWith((ref, id) => Stream.value(periodos)),
+        cargosProvider.overrideWith((ref, id) => Stream.value(cargos)),
       ],
       child: const MaterialApp(home: RegistrarPagoScreen(clienteId: 1)),
     ));
@@ -83,5 +87,22 @@ void main() {
         )
         .first);
     expect(boton.onPressed, isNull);
+  });
+
+  testWidgets('un cargo extra anterior se cubre antes que el mes', (tester) async {
+    cargos = [
+      CargoSaldo(id: 7, concepto: 'Antena no devuelta', fecha: DateTime(2026, 9, 20), monto: 80000),
+    ];
+    await abrirPantalla(tester);
+
+    // Sugiere lo que debe: $800 del cargo + $250 de octubre.
+    expect(find.widgetWithText(TextFormField, '1050'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextFormField).first, '900');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Antena no devuelta'), findsOneWidget);
+    expect(find.text('Cargo extra · liquidado'), findsOneWidget);
+    expect(find.text(r'Abono, faltan $150.00'), findsOneWidget);
   });
 }
