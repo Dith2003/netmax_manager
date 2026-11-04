@@ -8,6 +8,8 @@ import '../../data/db/database.dart';
 import '../../data/repositories/pagos_repository.dart';
 import '../../domain/clientes.dart';
 import '../../domain/cobranza.dart';
+import '../../domain/reportes.dart' show numeroComprobante;
+import '../../providers/sesion.dart';
 import '../../providers/providers.dart';
 import '../../widgets/comunes.dart';
 import '../../widgets/disposicion.dart';
@@ -153,7 +155,11 @@ class _FormularioPagoState extends ConsumerState<_FormularioPago> {
               monto: monto,
               fecha: _fecha,
               metodo: _metodo,
-              folio: textoONull(_folio.text),
+              // La referencia solo aplica a transferencias y depósitos.
+              folio: _metodo == MetodoPago.transferencia || _metodo == MetodoPago.deposito
+                  ? textoONull(_folio.text)
+                  : null,
+              registradoPor: ref.read(sesionProvider)?.id,
               notas: textoONull(_notas.text),
             ),
           );
@@ -272,9 +278,17 @@ class _FormularioPagoState extends ConsumerState<_FormularioPago> {
           ],
         ),
         FilaCampos(izquierda: campoFecha, derecha: campoMetodo),
-        TextField(
-          controller: _folio,
-          decoration: const InputDecoration(labelText: 'Folio o referencia (opcional)'),
+        FilaCampos(
+          izquierda: _CampoFolio(folio: ref.watch(siguienteFolioProvider).whenOrNull(data: (f) => f)),
+          derecha: _metodo == MetodoPago.transferencia || _metodo == MetodoPago.deposito
+              ? TextField(
+                  controller: _folio,
+                  decoration: const InputDecoration(
+                    labelText: 'Referencia bancaria (opcional)',
+                    helperText: 'Número de operación del banco',
+                  ),
+                )
+              : const SizedBox.shrink(),
         ),
         TextField(
           controller: _notas,
@@ -386,6 +400,39 @@ class _VistaPrevia extends StatelessWidget {
               trailing: Text(formatoDinero(a.monto)),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// Folio del comprobante: lo asigna el sistema al guardar (no se edita).
+class _CampoFolio extends StatelessWidget {
+  const _CampoFolio({required this.folio});
+
+  /// Folio que tendrá el pago, o null si aún no se sabe.
+  final int? folio;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      readOnly: true,
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: 'Folio del comprobante',
+          helperText: 'Lo asigna el sistema al registrar el pago',
+          filled: true,
+          fillColor: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          prefixIcon: const Icon(Icons.lock_outline, size: 20),
+          enabled: false,
+        ),
+        child: Text(
+          folio == null ? 'Se asigna al guardar' : 'N° ${numeroComprobante(folio!)}',
+          style: Theme.of(context)
+              .textTheme
+              .titleMedium
+              ?.copyWith(color: scheme.onSurface, fontWeight: FontWeight.w600),
+        ),
       ),
     );
   }

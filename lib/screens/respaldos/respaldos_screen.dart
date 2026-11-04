@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart' show ShareParams, SharePlus, XFile;
 import '../../core/fechas.dart';
 import '../../data/respaldos/respaldo_service.dart';
 import '../../providers/providers.dart';
+import '../../providers/sesion.dart';
 import '../../widgets/comunes.dart';
 import '../../widgets/disposicion.dart';
 
@@ -179,6 +180,16 @@ class _RespaldosScreenState extends ConsumerState<RespaldosScreen> {
               label: Text(Platform.isAndroid ? 'Crear y compartir respaldo' : 'Crear respaldo'),
             ),
             const SizedBox(height: 32),
+            if (!ref.watch(permisosProvider).restaurarRespaldos)
+              const Card(
+                margin: EdgeInsets.zero,
+                child: ListTile(
+                  leading: Icon(Icons.lock_outline),
+                  title: Text('Restaurar respaldos'),
+                  subtitle: Text('Solo el propietario puede restaurar un respaldo.'),
+                ),
+              )
+            else ...[
             Text('Restaurar', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             const Text(
@@ -192,6 +203,7 @@ class _RespaldosScreenState extends ConsumerState<RespaldosScreen> {
               icon: const Icon(Icons.restore),
               label: const Text('Restaurar desde un respaldo'),
             ),
+            ],
           ],
         ),
       ),

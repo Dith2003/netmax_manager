@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../providers/sesion.dart';
 import '../screens/adeudos/adeudos_screen.dart';
 import '../screens/clientes/cliente_detalle_screen.dart';
 import '../screens/clientes/cliente_form_screen.dart';
@@ -94,7 +96,7 @@ GoRouter crearRouter() {
 }
 
 /// Navegación principal: panel lateral en escritorio y barra inferior en el celular.
-class _ConNavegacion extends StatelessWidget {
+class _ConNavegacion extends ConsumerWidget {
   const _ConNavegacion({required this.ubicacion, required this.child});
 
   final String ubicacion;
@@ -134,9 +136,15 @@ class _ConNavegacion extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Configuración solo para quien tiene permiso (el propietario).
+    final permisos = ref.watch(permisosProvider);
+    final inferiores = [
+      for (final d in _inferiores)
+        if (d.ruta != '/configuracion' || permisos.configurar) d,
+    ];
     final encontrado = _destinos.indexWhere((d) => ubicacion.startsWith(d.ruta));
-    final inferior = _inferiores.indexWhere((d) => ubicacion.startsWith(d.ruta));
+    final inferior = inferiores.indexWhere((d) => ubicacion.startsWith(d.ruta));
     final indice = encontrado < 0 ? (inferior >= 0 ? -1 : 0) : encontrado;
     final ancho = MediaQuery.sizeOf(context).width;
 
@@ -149,9 +157,9 @@ class _ConNavegacion extends StatelessWidget {
               seleccionado: indice,
               extendido: ancho >= 1180,
               onSeleccionar: (i) => context.go(_destinos[i].ruta),
-              destinosInferiores: _inferiores,
+              destinosInferiores: inferiores,
               inferiorSeleccionado: inferior,
-              onInferior: (i) => context.go(_inferiores[i].ruta),
+              onInferior: (i) => context.go(inferiores[i].ruta),
             ),
             Expanded(child: child),
           ],

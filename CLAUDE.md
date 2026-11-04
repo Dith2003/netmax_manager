@@ -30,6 +30,8 @@ lib/
                  # clientes.dart (búsqueda sin acentos, validaciones de formulario,
                  #   agruparDetalles de contratación personalizada),
                  # planes.dart (DatosPlan, validaciones de plan),
+                 # usuarios.dart (PIN protegido con sal + SHA-256 iterado, validaciones,
+                 #   bloqueo tras 5 intentos, Permisos por rol),
                  # vencimientos.dart (primer mes de cobro, mesesPorGenerar, estadoEnFecha),
                  # dashboard.dart (cobrado del mes, avance del mes, próximos vencimientos,
                  #   serieCobranza y serieActividad de 12 meses),
@@ -39,6 +41,7 @@ lib/
     repositories/  # clientes_repository.dart (clientes, estados, instalaciones, equipos,
                    #   contrataciones personalizadas usadas)
                    # planes_repository.dart (catálogo de planes con número de clientes)
+                   # usuarios_repository.dart (crear, autenticar, editar/cambiar PIN, activar)
                    # pagos_repository.dart (saldos por mes, registrar/cancelar pago, historial)
                    # vencimientos_repository.dart (generar meses, cortesía, agregar/quitar mes,
                    #   cargos extra, adeudos)
@@ -53,11 +56,15 @@ lib/
                  # guardar_pdf.dart (botón "Guardar PDF" en la computadora: en Windows el
                  #   "compartir" de printing solo abre el PDF desde una carpeta temporal)
   providers/     # providers.dart: databaseProvider (se inyecta en main) y StreamProviders;
-                 # zoom.dart (zoomProvider, niveles 80–150 %, guardado en configuraciones.zoom)
+                 # zoom.dart (zoomProvider, niveles 80–150 %, guardado en configuraciones.zoom);
+                 # sesion.dart (sesionProvider, permisosProvider, usuariosProvider,
+                 #   sesionInicialProvider para pruebas)
   screens/       # una carpeta por módulo: clientes/ (lista = tabla de gestión, formulario,
                  # ficha, diálogos, acciones_cliente.dart: editar/suspender/reactivar/cancelar,
                  # modales.dart: alta/edición/ficha en ventana modal con navegación propia),
-                 # configuracion/ (planes y tipos de contratación, dialogo_plan.dart),
+                 # configuracion/ (planes, tipos de contratación, dialogo_plan.dart,
+                 #   usuarios_seccion.dart); sesion/acceso_screen.dart (PuertaSesion: primer
+                 #   propietario o usuario + PIN),
                  # estado_cuenta_screen.dart; pagos/ (registrar pago, comprobante_screen);
                  # adeudos/ (lista de adeudos); inicio/ (dashboard: acciones rápidas, indicadores,
                  # graficas.dart con fl_chart, vencimientos, pagos recientes);
@@ -76,7 +83,8 @@ lib/
                  # /respaldos, /configuracion (Inicio y panel lateral)
   main.dart      # AppRaiz: abre la BD y reconstruye toda la app (ProviderScope con key)
                  # al restaurar un respaldo (restaurarRespaldoProvider); ZoomInterfaz escala
-                 # toda la interfaz (Ctrl + / Ctrl − / Ctrl 0)
+                 # toda la interfaz (Ctrl + / Ctrl − / Ctrl 0); PuertaSesion muestra el acceso
+                 # si no hay sesión; al cerrar sesión se regresa a /inicio
 assets/
   fonts/         # Outfit (Regular/Medium/SemiBold/Bold, OFL) para la app y los PDF
   marca/         # logo.svg/png (fondo claro) y logo_claro.svg/png (fondo azul)
@@ -146,6 +154,17 @@ docs/
 19. **Gestión en la lista de clientes**: cada renglón tiene Editar, Suspender/Reactivar y Cancelar
    servicio visibles (activo → suspender/cancelar; suspendido → reactivar/cancelar; cancelado →
    reactivar). La ficha muestra los mismos botones. Siempre se pide confirmación con motivo.
+20. **Acceso (login)**: usuario + PIN (4–6 números) al abrir la app; la sesión dura hasta cerrar
+   la app o "Cerrar sesión" (panel lateral / barra de Inicio en el celular). Sin usuarios, se crea
+   el propietario (el primero siempre lo es). Roles: **propietario** (todo) y **administrador**
+   (registra clientes y pagos; no ve Configuración, no restaura respaldos, no cancela pagos, no
+   administra usuarios). Usuarios en Configuración › Usuarios: no se borran, se desactivan; debe
+   quedar un propietario activo; no puedes desactivarte a ti mismo. 5 PIN incorrectos = 30 s de
+   espera. Se guarda quién registró cada pago (`pagos.registrado_por`) y cada cambio de estado
+   (`historial_estados.usuario_id`) y se muestra "por <nombre>" en la ficha.
+21. **Folio del pago**: es el número del comprobante (id del pago, 6 dígitos) y lo asigna el
+   sistema; al registrar se muestra el siguiente (no editable). La columna `pagos.folio` guarda
+   solo la referencia bancaria (se pide con transferencia o depósito).
 
 ## Convenciones
 - Código y nombres de tablas en español sin acentos (`clientes`, `fecha_pago`).
@@ -189,6 +208,8 @@ docs/
   `Transform.scale` + `OverflowBox`: con zoom < 100 % los clics de la derecha/abajo no llegaban).
   Se guarda por equipo en `configuraciones` (clave `zoom`).
 - Modales: el botón "atrás" de Android regresa dentro del modal (`NavigatorPopHandler`).
+- **Ficha del cliente**: resumen arriba y pestañas Pagos / Instalaciones / Equipos / Historial
+  (con número de registros) para no mezclar la información.
 - **Comprobante tipo cheque**: `conceptosCompactos` agrupa meses consecutivos ("Mensualidades
   sep 2026 – abr 2027 (8)") y junta lo que pase de 4 líneas en "Otros N conceptos".
 - **Reportes**: tarjetas agrupadas (Cobranza; Clientes y cartera); en escritorio la vista previa
@@ -240,6 +261,7 @@ docs/
 - [x] Revisión de botones (zoom < 100 %, "atrás" en modales, Guardar PDF en Windows),
       Configuración de planes y contratación personalizada, descripciones de Instalaciones y
       Equipos, botones de gestión visibles en la tabla de clientes
+- [x] Ficha en pestañas, folio automático del pago, login con usuario + PIN y roles
 
 ## Futuro (no hacer todavía)
 Sincronización entre dispositivos, recordatorios por WhatsApp, mapa/GPS de clientes,

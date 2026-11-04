@@ -43,6 +43,7 @@ void main() {
         clienteProvider.overrideWith((ref, id) => Stream.value(cliente)),
         periodosProvider.overrideWith((ref, id) => Stream.value(periodos)),
         cargosProvider.overrideWith((ref, id) => Stream.value(cargos)),
+        siguienteFolioProvider.overrideWith((ref) async => 129),
       ],
       child: const MaterialApp(home: RegistrarPagoScreen(clienteId: 1)),
     ));
@@ -104,5 +105,22 @@ void main() {
     expect(find.text('Antena no devuelta'), findsOneWidget);
     expect(find.text('Cargo extra · liquidado'), findsOneWidget);
     expect(find.text(r'Abono, faltan $150.00'), findsOneWidget);
+  });
+
+  testWidgets('el folio lo asigna el sistema y la referencia solo aparece con transferencia',
+      (tester) async {
+    await abrirPantalla(tester);
+
+    expect(find.text('Folio del comprobante'), findsOneWidget);
+    expect(find.text('N° 000129'), findsOneWidget);
+    // El folio no es un campo de texto: no se puede escribir.
+    expect(find.widgetWithText(TextField, 'N° 000129'), findsNothing);
+    expect(find.text('Referencia bancaria (opcional)'), findsNothing);
+
+    await tester.tap(find.text('Efectivo'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Transferencia').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Referencia bancaria (opcional)'), findsOneWidget);
   });
 }

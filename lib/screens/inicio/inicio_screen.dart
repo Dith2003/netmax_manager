@@ -10,6 +10,7 @@ import '../../data/repositories/clientes_repository.dart';
 import '../../data/respaldos/respaldo_service.dart';
 import '../../domain/dashboard.dart';
 import '../../providers/providers.dart';
+import '../../providers/sesion.dart';
 import '../../widgets/comunes.dart';
 import '../../widgets/disposicion.dart';
 import '../clientes/modales.dart';
@@ -43,10 +44,16 @@ class InicioScreen extends ConsumerWidget {
             icon: const Icon(Icons.backup),
             onPressed: () => context.push('/respaldos'),
           ),
+          if (ref.watch(permisosProvider).configurar)
+            IconButton(
+              tooltip: 'Configuración',
+              icon: const Icon(Icons.settings),
+              onPressed: () => context.push('/configuracion'),
+            ),
           IconButton(
-            tooltip: 'Configuración',
-            icon: const Icon(Icons.settings),
-            onPressed: () => context.push('/configuracion'),
+            tooltip: 'Cerrar sesión',
+            icon: const Icon(Icons.logout),
+            onPressed: () => ref.read(sesionProvider.notifier).cerrar(),
           ),
           const SizedBox(width: 8),
         ],

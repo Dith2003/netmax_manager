@@ -14,13 +14,20 @@ class DatosPago {
     this.metodo = MetodoPago.efectivo,
     this.folio,
     this.notas,
+    this.registradoPor,
   });
 
   final int monto;
   final DateTime fecha;
   final MetodoPago metodo;
+
+  /// Referencia bancaria (transferencia o depósito). El folio del comprobante
+  /// es el número del pago y lo asigna el sistema.
   final String? folio;
   final String? notas;
+
+  /// Usuario que registra el pago (sesión actual).
+  final int? registradoPor;
 }
 
 /// Un pago con los meses que cubrió.
@@ -119,6 +126,18 @@ class PagosRepository {
     );
   }
 
+  /// Número (folio) que tendrá el siguiente pago: el id que le asignará SQLite.
+  /// Solo es informativo: el folio definitivo es el id con que se guarde.
+  Future<int> siguienteFolio() async {
+    final secuencia = await _db
+        .customSelect("SELECT seq FROM sqlite_sequence WHERE name = 'pagos'")
+        .getSingleOrNull();
+    if (secuencia != null) return secuencia.read<int>('seq') + 1;
+    final maximo =
+        await _db.customSelect('SELECT MAX(id) AS m FROM pagos').getSingleOrNull();
+    return (maximo?.readNullable<int>('m') ?? 0) + 1;
+  }
+
   /// Guarda el pago, crea los meses adelantados que hagan falta y registra
   /// a qué meses se aplicó. Devuelve el id del pago.
   Future<int> registrarPago(int clienteId, DatosPago datos) {
@@ -165,6 +184,7 @@ class PagosRepository {
             metodo: datos.metodo,
             folio: Value(datos.folio),
             notas: Value(datos.notas),
+            registradoPor: Value(datos.registradoPor),
             creadoEn: Value(DateTime.now()),
           ));
 

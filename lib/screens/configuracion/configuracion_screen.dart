@@ -6,9 +6,11 @@ import '../../core/etiquetas.dart';
 import '../../data/db/database.dart';
 import '../../data/repositories/vencimientos_repository.dart' show OperacionNoPermitida;
 import '../../providers/providers.dart';
+import '../../providers/sesion.dart';
 import '../../widgets/comunes.dart';
 import '../../widgets/disposicion.dart';
 import 'dialogo_plan.dart';
+import 'usuarios_seccion.dart';
 
 /// Configuración: catálogo de planes y tipos de contratación.
 class ConfiguracionScreen extends ConsumerWidget {
@@ -17,6 +19,19 @@ class ConfiguracionScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final escritorio = esEscritorio(context);
+    final permisos = ref.watch(permisosProvider);
+    if (!permisos.configurar) {
+      return Scaffold(
+        appBar: escritorio ? null : AppBar(title: const Text('Configuración')),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text('Solo el propietario puede cambiar la configuración.',
+                textAlign: TextAlign.center),
+          ),
+        ),
+      );
+    }
     return Scaffold(
       appBar: escritorio ? null : AppBar(title: const Text('Configuración')),
       body: ListView(
@@ -30,7 +45,7 @@ class ConfiguracionScreen extends ConsumerWidget {
                 if (escritorio)
                   const EncabezadoSeccion(
                     titulo: 'Configuración',
-                    descripcion: 'Planes de internet y tipos de contratación de tus clientes',
+                    descripcion: 'Planes de internet, tipos de contratación y usuarios',
                     icono: Icons.settings,
                   ),
                 const Padding(
@@ -41,6 +56,11 @@ class ConfiguracionScreen extends ConsumerWidget {
                   padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
                   child: _TarjetaContrataciones(),
                 ),
+                if (permisos.administrarUsuarios)
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    child: TarjetaUsuarios(),
+                  ),
               ],
             ),
           ),

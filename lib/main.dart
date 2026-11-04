@@ -11,7 +11,9 @@ import 'data/repositories/vencimientos_repository.dart';
 import 'data/respaldos/respaldo_service.dart';
 import 'providers/providers.dart';
 import 'providers/zoom.dart';
+import 'providers/sesion.dart';
 import 'routes/app_router.dart';
+import 'screens/sesion/acceso_screen.dart';
 import 'widgets/zoom_interfaz.dart';
 
 Future<void> main() async {
@@ -124,6 +126,10 @@ class _NetMaxAppState extends ConsumerState<NetMaxApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Al cerrar sesión, el siguiente usuario empieza en Inicio.
+    ref.listen(sesionProvider, (antes, ahora) {
+      if (antes != null && ahora == null) _router.go('/inicio');
+    });
     return MaterialApp.router(
       title: 'NET_MAX',
       debugShowCheckedModeBanner: false,
@@ -134,7 +140,9 @@ class _NetMaxAppState extends ConsumerState<NetMaxApp> {
       locale: const Locale('es', 'MX'),
       supportedLocales: const [Locale('es', 'MX'), Locale('es')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
-      builder: (context, child) => ZoomInterfaz(child: child ?? const SizedBox.shrink()),
+      // Zoom para todo; sin sesión, la pantalla de acceso en lugar de la app.
+      builder: (context, child) =>
+          ZoomInterfaz(child: PuertaSesion(child: child ?? const SizedBox.shrink())),
     );
   }
 }
