@@ -26,19 +26,23 @@ lib/
                  # etiquetas.dart (textos en español de los enums)
   domain/        # reglas puras sin BD: cobranza.dart (aplicarPago, calcularAdeudo, pagadoHasta),
                  # clientes.dart (búsqueda sin acentos, validaciones de formulario),
-                 # vencimientos.dart (primer mes de cobro, mesesPorGenerar, estadoEnFecha)
+                 # vencimientos.dart (primer mes de cobro, mesesPorGenerar, estadoEnFecha),
+                 # dashboard.dart (cobrado del mes, avance del mes, próximos vencimientos)
   data/
     db/          # database.dart (tablas drift + AppDatabase), enums.dart
     repositories/  # clientes_repository.dart (clientes, estados, instalaciones, equipos)
                    # pagos_repository.dart (saldos por mes, registrar/cancelar pago, historial)
                    # vencimientos_repository.dart (generar meses, cortesía, agregar/quitar mes,
                    #   cargos extra, adeudos)
+                   # dashboard_repository.dart (resumen de inicio; se recalcula con consulta testigo)
   providers/     # providers.dart: databaseProvider (se inyecta en main) y StreamProviders
   screens/       # una carpeta por módulo: clientes/ (lista, formulario, ficha, diálogos),
-                 # estado_cuenta_screen.dart; pagos/ (registrar pago); adeudos/ (lista de adeudos)
+                 # estado_cuenta_screen.dart; pagos/ (registrar pago); adeudos/ (lista de adeudos);
+                 # inicio/ (dashboard: indicadores, medidor del mes, vencimientos, pagos recientes)
   widgets/       # comunes.dart (EstadoChip, ErrorVista, SeccionTitulo, mostrarMensaje)
-  routes/        # app_router.dart (go_router, ShellRoute con barra Clientes/Adeudos):
-                 # /clientes, /clientes/nuevo, /clientes/:id, /clientes/:id/{editar,pago,estado-cuenta}, /adeudos
+  routes/        # app_router.dart (go_router, ShellRoute con barra Inicio/Clientes/Adeudos):
+                 # /inicio (arranque), /clientes, /clientes/nuevo, /clientes/:id,
+                 # /clientes/:id/{editar,pago,estado-cuenta}, /adeudos
 docs/
   schema.sql     # referencia original; la fuente de verdad es lib/data/db/database.dart
 ```
@@ -74,6 +78,10 @@ docs/
    adeudo. Los pagos cubren meses y cargos juntos en orden de fecha (vencimiento del mes o fecha
    del cargo; con la misma fecha va primero el mes). Un cargo se cancela (no se borra) y solo si
    no tiene pagos vigentes.
+13. **Inicio (dashboard)**: *cobrado en el mes* = pagos vigentes con fecha en el mes (dinero
+   recibido); *mensualidades del mes* = meses del mes actual sin cortesía vs lo pagado de ellos;
+   *por cobrar* = adeudo vencido total (meses + cargos); *próximos vencimientos* = meses con saldo
+   de clientes activos que vencen de hoy a 7 días.
 
 ## Convenciones
 - Código y nombres de tablas en español sin acentos (`clientes`, `fecha_pago`).
@@ -95,6 +103,9 @@ docs/
   pantallas con providers simulados (`overrideWith`), **sin BD real** (drift + reloj simulado se cuelga).
 - Usar APIs actuales de Flutter: `DropdownButtonFormField(initialValue:)` (no `value:`), sin `RadioListTile`
   con `groupValue` (obsoleto). Interfaz en español; fechas con `core/fechas.dart` (no se usa intl).
+- Indicadores y medidores: etiqueta en minúsculas sin dos puntos, valor grande, texto en colores
+  de texto (no de serie); estados con ícono + texto, nunca solo color; medidor con la pista en un
+  tono claro del mismo color (`primary` sobre `primaryContainer`).
 - Historial y fechas automáticas: guardar `DateTime.now()` explícito (no `currentDateAndTime`, que es UTC).
 
 ## Flujo de trabajo
@@ -109,7 +120,7 @@ docs/
 - [x] Sprint 3: Pagos (reparto automático con vista previa, abonos, adelantos, cancelación)
 - [x] Sprint 4: Vencimientos y adeudos (primer mes configurable, generación, cortesía, estado de cuenta)
 - [x] Sprint 4b: Cargos extra (equipo no devuelto, reconexión, etc.)
-- [ ] Sprint 5: Dashboard
+- [x] Sprint 5: Dashboard (pantalla de inicio)
 - [ ] Sprint 6: Reportes
 - [ ] Sprint 7: Respaldos (exportar/importar archivo .db)
 
