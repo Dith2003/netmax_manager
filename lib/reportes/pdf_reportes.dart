@@ -10,64 +10,112 @@ import 'package:pdf/widgets.dart' as pw;
 import '../core/dinero.dart';
 import '../core/etiquetas.dart';
 import '../core/fechas.dart';
+import '../core/marca.dart';
 import '../data/db/enums.dart';
 import '../data/repositories/vencimientos_repository.dart';
 import '../domain/reportes.dart';
 
-/// Tipografía de los reportes (Open Sans, incluida en assets/fonts).
-Future<pw.ThemeData> cargarTemaPdf() async {
-  final normal = pw.Font.ttf(await rootBundle.load('assets/fonts/OpenSans-Regular.ttf'));
-  final negrita = pw.Font.ttf(await rootBundle.load('assets/fonts/OpenSans-Bold.ttf'));
-  return pw.ThemeData.withFont(base: normal, bold: negrita);
+/// Tipografía y logo de los reportes.
+class EstiloPdf {
+  const EstiloPdf({required this.tema, this.logo});
+
+  final pw.ThemeData tema;
+  final pw.ImageProvider? logo;
 }
 
-const _gris = PdfColor.fromInt(0xFF5F6368);
-const _lineas = PdfColor.fromInt(0xFFDADCE0);
-const _fondoEncabezado = PdfColor.fromInt(0xFFE8EAF6);
+/// Carga la tipografía Outfit y el logo de NET_MAX (incluidos en la app).
+Future<EstiloPdf> cargarEstiloPdf() async {
+  final normal = pw.Font.ttf(await rootBundle.load('assets/fonts/Outfit-Regular.ttf'));
+  final negrita = pw.Font.ttf(await rootBundle.load('assets/fonts/Outfit-SemiBold.ttf'));
+  final logo = await rootBundle.load(ImagenesMarca.logo);
+  return EstiloPdf(
+    tema: pw.ThemeData.withFont(base: normal, bold: negrita),
+    logo: pw.MemoryImage(logo.buffer.asUint8List()),
+  );
+}
 
-/// Documento base: encabezado con negocio, título y subtítulo; pie con página.
+const _azul = PdfColor.fromInt(0xFF13294B);
+const _verde = PdfColor.fromInt(0xFF0B7A54);
+const _crema = PdfColor.fromInt(0xFFF4EDE1);
+const _gris = PdfColor.fromInt(0xFF5F6368);
+const _lineas = PdfColor.fromInt(0xFFDDD5C8);
+const _fondoTotales = PdfColor.fromInt(0xFFF4EDE1);
+
+/// Documento base: encabezado con la marca, título y periodo; pie con datos
+/// del negocio y número de página.
 Future<Uint8List> _documento({
-  required pw.ThemeData tema,
+  required EstiloPdf estilo,
   required String titulo,
   required String subtitulo,
   required DateTime generado,
   required List<pw.Widget> contenido,
   PdfPageFormat formato = PdfPageFormat.letter,
 }) {
-  final doc = pw.Document(title: titulo, author: 'NetMAX', creator: 'NetMAX Manager');
+  final doc = pw.Document(
+      title: titulo, author: DatosNegocio.nombre, creator: '${DatosNegocio.nombre} Manager');
   doc.addPage(pw.MultiPage(
-    theme: tema,
+    theme: estilo.tema,
     pageFormat: formato,
-    margin: const pw.EdgeInsets.all(36),
+    margin: const pw.EdgeInsets.fromLTRB(36, 30, 36, 30),
     header: (context) => pw.Container(
       margin: const pw.EdgeInsets.only(bottom: 16),
-      padding: const pw.EdgeInsets.only(bottom: 8),
+      padding: const pw.EdgeInsets.only(bottom: 10),
       decoration: const pw.BoxDecoration(
-        border: pw.Border(bottom: pw.BorderSide(color: _lineas)),
+        border: pw.Border(bottom: pw.BorderSide(color: _verde, width: 1.5)),
       ),
       child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.end,
+        crossAxisAlignment: pw.CrossAxisAlignment.center,
         children: [
-          pw.Expanded(
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text('NetMAX', style: const pw.TextStyle(fontSize: 10, color: _gris)),
-                pw.Text(titulo,
-                    style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
-                pw.Text(subtitulo, style: const pw.TextStyle(fontSize: 10, color: _gris)),
-              ],
-            ),
+          if (estilo.logo != null) ...[
+            pw.Image(estilo.logo!, height: 34),
+            pw.SizedBox(width: 8),
+          ],
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.RichText(
+                text: pw.TextSpan(
+                  style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+                  children: const [
+                    pw.TextSpan(text: 'NET_', style: pw.TextStyle(color: _azul)),
+                    pw.TextSpan(text: 'MAX', style: pw.TextStyle(color: _verde)),
+                  ],
+                ),
+              ),
+              pw.Text(DatosNegocio.lema, style: const pw.TextStyle(fontSize: 7.5, color: _azul)),
+            ],
           ),
-          pw.Text('Generado el ${formatoFecha(generado)}',
-              style: const pw.TextStyle(fontSize: 8, color: _gris)),
+          pw.Spacer(),
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.end,
+            children: [
+              pw.Text(titulo,
+                  style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold, color: _azul)),
+              pw.Text(subtitulo, style: const pw.TextStyle(fontSize: 9.5, color: _gris)),
+              pw.Text('Generado el ${formatoFecha(generado)}',
+                  style: const pw.TextStyle(fontSize: 7.5, color: _gris)),
+            ],
+          ),
         ],
       ),
     ),
-    footer: (context) => pw.Align(
-      alignment: pw.Alignment.centerRight,
-      child: pw.Text('Página ${context.pageNumber} de ${context.pagesCount}',
-          style: const pw.TextStyle(fontSize: 8, color: _gris)),
+    footer: (context) => pw.Container(
+      padding: const pw.EdgeInsets.only(top: 6),
+      decoration: const pw.BoxDecoration(
+        border: pw.Border(top: pw.BorderSide(color: _lineas, width: 0.5)),
+      ),
+      child: pw.Row(
+        children: [
+          pw.Expanded(
+            child: pw.Text(
+              'Tel. ${DatosNegocio.telefono}  ·  ${DatosNegocio.correo}  ·  ${DatosNegocio.direccion}',
+              style: const pw.TextStyle(fontSize: 7.5, color: _gris),
+            ),
+          ),
+          pw.Text('Página ${context.pageNumber} de ${context.pagesCount}',
+              style: const pw.TextStyle(fontSize: 7.5, color: _gris)),
+        ],
+      ),
     ),
     build: (context) => contenido,
   ));
@@ -92,8 +140,8 @@ pw.Widget _tabla({
       horizontalInside: pw.BorderSide(color: _lineas, width: 0.5),
       bottom: pw.BorderSide(color: _lineas, width: 0.5),
     ),
-    headerDecoration: const pw.BoxDecoration(color: _fondoEncabezado),
-    headerStyle: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+    headerDecoration: const pw.BoxDecoration(color: _azul),
+    headerStyle: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: _crema),
     cellStyle: const pw.TextStyle(fontSize: 9),
     cellPadding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 3),
     headerAlignments: {
@@ -106,7 +154,7 @@ pw.Widget _tabla({
     cellDecoration: totales == null
         ? null
         : (index, data, rowNum) => rowNum == filas.length + 1
-            ? const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF1F3F4))
+            ? const pw.BoxDecoration(color: _fondoTotales)
             : const pw.BoxDecoration(),
     textStyleBuilder: totales == null
         ? null
@@ -127,7 +175,8 @@ pw.Widget _resumen(List<(String, String)> datos) => pw.Padding(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
                 pw.Text(etiqueta, style: const pw.TextStyle(fontSize: 8, color: _gris)),
-                pw.Text(valor, style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
+                pw.Text(valor,
+                    style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: _azul)),
               ],
             ),
         ],
@@ -145,7 +194,7 @@ pw.Widget _sinDatos(String texto) => pw.Padding(
 
 /// Ingresos por mes, con el desglose por método de pago.
 Future<Uint8List> pdfIngresos({
-  required pw.ThemeData tema,
+  required EstiloPdf estilo,
   required List<IngresoMes> meses,
   required String periodo,
   required DateTime generado,
@@ -153,7 +202,7 @@ Future<Uint8List> pdfIngresos({
   final total = totalIngresos(meses);
   final metodos = MetodoPago.values;
   return _documento(
-    tema: tema,
+    estilo: estilo,
     titulo: 'Ingresos por mes',
     subtitulo: periodo,
     generado: generado,
@@ -187,14 +236,14 @@ Future<Uint8List> pdfIngresos({
 
 /// Detalle de los pagos recibidos en un periodo.
 Future<Uint8List> pdfPagos({
-  required pw.ThemeData tema,
+  required EstiloPdf estilo,
   required List<FilaPago> pagos,
   required String periodo,
   required DateTime generado,
 }) {
   final total = pagos.fold<int>(0, (s, p) => s + p.monto);
   return _documento(
-    tema: tema,
+    estilo: estilo,
     titulo: 'Pagos recibidos',
     subtitulo: periodo,
     generado: generado,
@@ -237,13 +286,13 @@ Future<Uint8List> pdfPagos({
 
 /// Clientes con adeudo (para la ruta de cobro).
 Future<Uint8List> pdfAdeudos({
-  required pw.ThemeData tema,
+  required EstiloPdf estilo,
   required List<AdeudoCliente> adeudos,
   required DateTime generado,
 }) {
   final total = adeudos.fold<int>(0, (s, a) => s + a.adeudo.total);
   return _documento(
-    tema: tema,
+    estilo: estilo,
     titulo: 'Clientes con adeudo',
     subtitulo: 'Al ${formatoFecha(generado)}',
     generado: generado,
@@ -278,13 +327,13 @@ Future<Uint8List> pdfAdeudos({
 
 /// Lista de clientes con su situación de pago.
 Future<Uint8List> pdfClientes({
-  required pw.ThemeData tema,
+  required EstiloPdf estilo,
   required List<FilaCliente> clientes,
   required DateTime generado,
 }) {
   int cuantos(EstadoCliente e) => clientes.where((c) => c.estado == e).length;
   return _documento(
-    tema: tema,
+    estilo: estilo,
     titulo: 'Clientes',
     subtitulo: 'Al ${formatoFecha(generado)}',
     generado: generado,

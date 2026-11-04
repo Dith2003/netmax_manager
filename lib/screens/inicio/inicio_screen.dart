@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/dinero.dart';
 import '../../core/fechas.dart';
+import '../../core/marca.dart';
 import '../../data/respaldos/respaldo_service.dart';
 import '../../domain/dashboard.dart';
 import '../../providers/providers.dart';
@@ -27,7 +28,8 @@ class InicioScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('NetMAX'),
+        toolbarHeight: 76,
+        title: const MarcaNetMax(alto: 40, sobreOscuro: true, conLema: true),
         actions: [
           IconButton(
             tooltip: 'Respaldos',

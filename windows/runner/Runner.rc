@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.netmax" "\0"
-            VALUE "FileDescription", "netmax_manager" "\0"
+            VALUE "FileDescription", "NET_MAX" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "netmax_manager" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.netmax. All rights reserved." "\0"
             VALUE "OriginalFilename", "netmax_manager.exe" "\0"
-            VALUE "ProductName", "netmax_manager" "\0"
+            VALUE "ProductName", "NET_MAX" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

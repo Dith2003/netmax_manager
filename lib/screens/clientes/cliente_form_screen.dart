@@ -201,7 +201,6 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
       decoration: const InputDecoration(
         labelText: 'Primer mes de cobro *',
         helperText: 'Desde este mes se generan los cobros mensuales',
-        border: OutlineInputBorder(),
       ),
       items: [
         for (final m in opciones) DropdownMenuItem(value: m, child: Text(etiqueta(m))),
@@ -239,7 +238,6 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
             controller: _nombre,
             decoration: const InputDecoration(
               labelText: 'Nombre completo *',
-              border: OutlineInputBorder(),
             ),
             textCapitalization: TextCapitalization.words,
             validator: validarNombre,
@@ -249,7 +247,6 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
             controller: _telefono,
             decoration: const InputDecoration(
               labelText: 'Teléfono (10 dígitos)',
-              border: OutlineInputBorder(),
             ),
             keyboardType: TextInputType.phone,
             validator: validarTelefono,
@@ -259,7 +256,6 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
             controller: _direccion,
             decoration: const InputDecoration(
               labelText: 'Dirección',
-              border: OutlineInputBorder(),
             ),
           ),
           espacio,
@@ -267,7 +263,6 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
             controller: _zona,
             decoration: const InputDecoration(
               labelText: 'Zona / comunidad',
-              border: OutlineInputBorder(),
             ),
             textCapitalization: TextCapitalization.words,
           ),
@@ -276,7 +271,6 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
             controller: _referencia,
             decoration: const InputDecoration(
               labelText: 'Referencia (cómo llegar)',
-              border: OutlineInputBorder(),
             ),
             maxLines: 2,
           ),
@@ -287,7 +281,6 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
             initialValue: _planId,
             decoration: const InputDecoration(
               labelText: 'Plan *',
-              border: OutlineInputBorder(),
             ),
             items: [
               for (final p in planes)
@@ -308,7 +301,6 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
               labelText: 'Precio mensual *',
               prefixText: '\$ ',
               helperText: 'Puede ser distinto al del plan (p. ej. zonas alejadas)',
-              border: OutlineInputBorder(),
             ),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             validator: validarMontoObligatorio,
@@ -327,7 +319,6 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
             initialValue: _diaCorte,
             decoration: const InputDecoration(
               labelText: 'Día de corte (vencimiento) *',
-              border: OutlineInputBorder(),
             ),
             items: [
               for (var d = 1; d <= 28; d++)
@@ -343,7 +334,6 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
             isExpanded: true,
             decoration: const InputDecoration(
               labelText: 'Tipo de contratación *',
-              border: OutlineInputBorder(),
             ),
             items: [
               for (final t in TipoContratacion.values)
@@ -359,7 +349,6 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
             child: InputDecorator(
               decoration: const InputDecoration(
                 labelText: 'Fecha de alta',
-                border: OutlineInputBorder(),
                 suffixIcon: Icon(Icons.calendar_today),
               ),
               child: Text(formatoFecha(_fechaAlta)),
@@ -372,7 +361,6 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
             controller: _notas,
             decoration: const InputDecoration(
               labelText: 'Notas',
-              border: OutlineInputBorder(),
             ),
             maxLines: 3,
           ),

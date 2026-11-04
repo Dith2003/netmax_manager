@@ -46,3 +46,18 @@ jobs:
         # Corre aunque el análisis marque avisos, para ver ambos resultados.
         if: ${{ !cancelled() && steps.codigo.outcome == 'success' }}
         run: flutter test
+
+      - name: Capturas de pantalla (para revisar el diseño)
+        if: ${{ !cancelled() && steps.codigo.outcome == 'success' }}
+        continue-on-error: true
+        env:
+          CAPTURAS: '1'
+        run: |
+          flutter test test/capturas_test.dart --update-goldens
+          sudo apt-get install -y -qq poppler-utils > /dev/null
+          for f in build/capturas/*.pdf; do pdftoppm -png -r 70 -f 1 -l 1 "$f" "${f%.pdf}"; done
+          tar czf /tmp/capturas.tgz test/capturas/*.png build/capturas/*.png
+          echo "INICIO_CAPTURAS"
+          base64 -w0 /tmp/capturas.tgz
+          echo
+          echo "FIN_CAPTURAS"

@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'core/tema.dart';
 import 'data/db/database.dart';
 import 'data/repositories/vencimientos_repository.dart';
 import 'data/respaldos/respaldo_service.dart';
@@ -114,9 +115,9 @@ class _NetMaxAppState extends State<NetMaxApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'NetMAX Manager',
+      title: 'NET_MAX',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
+      theme: temaNetMax(),
       routerConfig: _router,
       scaffoldMessengerKey: widget.mensajero,
       // Calendario, botones y textos del sistema en español.

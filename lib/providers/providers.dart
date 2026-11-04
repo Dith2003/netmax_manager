@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pdf/widgets.dart' as pw;
 
 import '../data/db/database.dart';
 import '../data/repositories/clientes_repository.dart';
@@ -98,8 +97,8 @@ final reportesRepositoryProvider = Provider<ReportesRepository>(
   (ref) => ReportesRepository(ref.watch(databaseProvider)),
 );
 
-/// Tipografía de los PDF (se carga una vez).
-final temaPdfProvider = FutureProvider<pw.ThemeData>((ref) => cargarTemaPdf());
+/// Tipografía y logo de los PDF (se cargan una vez).
+final estiloPdfProvider = FutureProvider<EstiloPdf>((ref) => cargarEstiloPdf());
 
 // ----- Respaldos -----
 

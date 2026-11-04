@@ -222,7 +222,6 @@ class _FormularioPagoState extends ConsumerState<_FormularioPago> {
           decoration: const InputDecoration(
             labelText: 'Monto recibido *',
             prefixText: '\$ ',
-            border: OutlineInputBorder(),
           ),
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -255,7 +254,6 @@ class _FormularioPagoState extends ConsumerState<_FormularioPago> {
                 child: InputDecorator(
                   decoration: const InputDecoration(
                     labelText: 'Fecha de pago',
-                    border: OutlineInputBorder(),
                     suffixIcon: Icon(Icons.calendar_today),
                   ),
                   child: Text(formatoFecha(_fecha)),
@@ -268,7 +266,6 @@ class _FormularioPagoState extends ConsumerState<_FormularioPago> {
                 initialValue: _metodo,
                 decoration: const InputDecoration(
                   labelText: 'Método',
-                  border: OutlineInputBorder(),
                 ),
                 items: [
                   for (final m in MetodoPago.values)
@@ -286,7 +283,6 @@ class _FormularioPagoState extends ConsumerState<_FormularioPago> {
           controller: _folio,
           decoration: const InputDecoration(
             labelText: 'Folio o referencia (opcional)',
-            border: OutlineInputBorder(),
           ),
         ),
         espacio,
@@ -294,7 +290,6 @@ class _FormularioPagoState extends ConsumerState<_FormularioPago> {
           controller: _notas,
           decoration: const InputDecoration(
             labelText: 'Notas (opcional)',
-            border: OutlineInputBorder(),
           ),
           maxLines: 2,
         ),

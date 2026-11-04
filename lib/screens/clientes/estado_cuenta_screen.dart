@@ -346,7 +346,6 @@ class _DialogoAgregarMesState extends State<_DialogoAgregarMes> {
               initialValue: _mes,
               decoration: const InputDecoration(
                 labelText: 'Mes',
-                border: OutlineInputBorder(),
               ),
               items: [
                 for (final m in widget.opciones)
