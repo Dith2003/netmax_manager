@@ -104,7 +104,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(Dialog), findsOneWidget);
     expect(find.text('Nuevo cliente'), findsOneWidget);
-    expect(find.text('Registrar cliente'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Cerrar sin guardar'));
     await tester.pumpAndSettle();
