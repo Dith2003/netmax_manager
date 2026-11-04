@@ -176,7 +176,8 @@ class _ContenidoState extends State<_Contenido> {
             runSpacing: espacio,
             children: [
               for (final indicador in _indicadores(context, r))
-                SizedBox(width: anchoIndicador, child: indicador),
+                // En escritorio todos los indicadores tienen la misma altura.
+                SizedBox(width: anchoIndicador, height: escritorio ? 156 : null, child: indicador),
             ],
           ),
           const SizedBox(height: espacio),
@@ -199,18 +200,17 @@ class _ContenidoState extends State<_Contenido> {
   List<Widget> _indicadores(BuildContext context, ResumenDashboard r) {
     final scheme = Theme.of(context).colorScheme;
 
-    // Variación de lo cobrado contra el mes anterior.
+    // Referencia: lo cobrado el mes anterior completo (el mes actual va en curso,
+    // por eso no se muestra un porcentaje que lo haría parecer una baja).
     _Variacion? variacion;
     if (r.cobranza.length >= 2) {
       final anterior = r.cobranza[r.cobranza.length - 2];
-      if (anterior.total > 0) {
-        final cambio = ((r.cobradoMes - anterior.total) * 100 / anterior.total).round();
-        final nombre = anterior.mes.nombreCorto.split(' ').first;
-        variacion = _Variacion(
-          texto: '${cambio >= 0 ? '+' : ''}$cambio% vs $nombre (a la fecha)',
-          sube: cambio >= 0,
-        );
-      }
+      final nombre = anterior.mes.nombre.split(' ').first;
+      variacion = _Variacion(
+        texto: '${nombre[0].toUpperCase()}${nombre.substring(1)} completo: '
+            '${formatoDinero(anterior.total)}',
+        neutral: true,
+      );
     }
     final altasMes = r.actividad.isEmpty ? 0 : r.actividad.last.altas;
     final porcentaje = (r.avanceMes * 100).round();
@@ -246,8 +246,7 @@ class _ContenidoState extends State<_Contenido> {
             '${r.cancelados} ${r.cancelados == 1 ? 'cancelado' : 'cancelados'}',
         variacion: altasMes == 0
             ? null
-            : _Variacion(
-                texto: '+$altasMes ${altasMes == 1 ? 'alta' : 'altas'} este mes', sube: true),
+            : _Variacion(texto: '+$altasMes ${altasMes == 1 ? 'alta' : 'altas'} este mes'),
         onTap: () => context.go('/clientes'),
         ayuda: 'Ver clientes',
       ),
@@ -394,10 +393,13 @@ class _SelectorClienteState extends ConsumerState<_SelectorCliente> {
 // ---------------------------------------------------------------------------
 
 class _Variacion {
-  const _Variacion({required this.texto, required this.sube});
+  const _Variacion({required this.texto, this.sube = true, this.neutral = false});
 
   final String texto;
   final bool sube;
+
+  /// Dato de referencia, sin flecha de subida o bajada.
+  final bool neutral;
 }
 
 /// Indicador (stat tile): etiqueta, valor grande, detalle y, opcionalmente,
@@ -494,9 +496,13 @@ class _Indicador extends StatelessWidget {
                 Row(
                   children: [
                     Icon(
-                      variacion!.sube ? Icons.trending_up : Icons.trending_down,
+                      variacion!.neutral
+                          ? Icons.history
+                          : (variacion!.sube ? Icons.trending_up : Icons.trending_down),
                       size: 16,
-                      color: variacion!.sube ? ColoresNetMax.verde : scheme.error,
+                      color: variacion!.neutral
+                          ? scheme.onSurfaceVariant
+                          : (variacion!.sube ? ColoresNetMax.verde : scheme.error),
                     ),
                     const SizedBox(width: 4),
                     Expanded(
@@ -504,7 +510,8 @@ class _Indicador extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: texto.bodySmall?.copyWith(
-                              color: scheme.onSurface, fontWeight: FontWeight.w600)),
+                              color: scheme.onSurface,
+                              fontWeight: variacion!.neutral ? FontWeight.w400 : FontWeight.w600)),
                     ),
                   ],
                 ),

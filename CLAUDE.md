@@ -29,8 +29,9 @@ lib/
   domain/        # reglas puras sin BD: cobranza.dart (aplicarPago, calcularAdeudo, pagadoHasta),
                  # clientes.dart (búsqueda sin acentos, validaciones de formulario),
                  # vencimientos.dart (primer mes de cobro, mesesPorGenerar, estadoEnFecha),
-                 # dashboard.dart (cobrado del mes, avance del mes, próximos vencimientos),
-                 # reportes.dart (FilaPago, ingresosPorMes, FilaCliente)
+                 # dashboard.dart (cobrado del mes, avance del mes, próximos vencimientos,
+                 #   serieCobranza y serieActividad de 12 meses),
+                 # reportes.dart (FilaPago, ingresosPorMes, FilaCliente, DatosComprobante)
   data/
     db/          # database.dart (tablas drift + AppDatabase), enums.dart
     repositories/  # clientes_repository.dart (clientes, estados, instalaciones, equipos)
@@ -38,20 +39,25 @@ lib/
                    # vencimientos_repository.dart (generar meses, cortesía, agregar/quitar mes,
                    #   cargos extra, adeudos)
                    # dashboard_repository.dart (resumen de inicio; se recalcula con consulta testigo)
-                   # reportes_repository.dart (pagos de un periodo, ingresos, adeudos, clientes)
+                   # reportes_repository.dart (pagos de un periodo, ingresos, adeudos, clientes,
+                   #   comprobante de un pago)
     respaldos/   # respaldo_service.dart (crear con VACUUM INTO, validar, reemplazar archivo)
   reportes/      # pdf_reportes.dart: PDFs carta con encabezado de marca y pie con datos del
-                 # negocio; EstiloPdf (Outfit + logo) cargado con cargarEstiloPdf()
+                 # negocio; EstiloPdf (Outfit + logo) cargado con cargarEstiloPdf();
+                 # pdfComprobante (media carta, marca de agua si el pago está cancelado)
   providers/     # providers.dart: databaseProvider (se inyecta en main) y StreamProviders
-  screens/       # una carpeta por módulo: clientes/ (lista, formulario, ficha, diálogos),
-                 # estado_cuenta_screen.dart; pagos/ (registrar pago); adeudos/ (lista de adeudos);
-                 # inicio/ (dashboard: indicadores, medidor del mes, vencimientos, pagos recientes);
-                 # reportes/ (lista de reportes y vista previa PdfPreview: imprimir/compartir);
+  screens/       # una carpeta por módulo: clientes/ (lista, formulario, ficha, diálogos,
+                 # modales.dart: alta/edición/ficha en ventana modal con navegación propia),
+                 # estado_cuenta_screen.dart; pagos/ (registrar pago, comprobante_screen);
+                 # adeudos/ (lista de adeudos); inicio/ (dashboard: acciones rápidas, indicadores,
+                 # graficas.dart con fl_chart, vencimientos, pagos recientes);
+                 # reportes/ (lista, vista previa PdfPreview y comprobantes_screen por mes);
                  # respaldos/ (crear: Windows guardar como / Android compartir; restaurar)
   widgets/       # comunes.dart (EstadoChip, ErrorVista, SeccionTitulo, mostrarMensaje)
   routes/        # app_router.dart (go_router, ShellRoute con barra Inicio/Clientes/Adeudos/Reportes):
                  # /inicio (arranque), /clientes, /clientes/nuevo, /clientes/:id,
-                 # /clientes/:id/{editar,pago,estado-cuenta}, /adeudos, /reportes, /reportes/:tipo,
+                 # /clientes/:id/{editar,pago,estado-cuenta}, /adeudos, /reportes,
+                 # /reportes/comprobantes, /reportes/:tipo,
                  # /respaldos (desde el botón de Inicio)
   main.dart      # AppRaiz: abre la BD y reconstruye toda la app (ProviderScope con key)
                  # al restaurar un respaldo (restaurarRespaldoProvider)
@@ -109,6 +115,13 @@ docs/
    cerrar BD, reemplazar (borrando -wal/-shm/-journal) y reabrir (las migraciones actualizan
    respaldos viejos). La fecha del último respaldo se guarda en `configuraciones.ultimo_respaldo`;
    Inicio recuerda respaldar si pasan más de 7 días.
+16. **Evolución en Inicio**: *cobranza por mes* = pagos vigentes por mes de pago (12 meses; el mes
+   actual en azul, los anteriores en verde); *actividad de clientes* = altas (por `fecha_alta`),
+   suspensiones y cancelaciones (por fecha del cambio en `historial_estados`, sin contar el registro
+   del alta). No se compara el mes en curso contra un mes completo con porcentajes.
+17. **Comprobante de pago**: N° = id del pago con 6 dígitos; conceptos = mensualidades y cargos que
+   cubrió; incluye "pagado hasta" y saldo pendiente a la fecha en que se genera. Se abre desde la
+   ficha (menú del pago), al registrar un pago y en Reportes > Comprobantes de pago.
 
 ## Convenciones
 - Código y nombres de tablas en español sin acentos (`clientes`, `fecha_pago`).
@@ -136,6 +149,15 @@ docs/
 - Historial y fechas automáticas: guardar `DateTime.now()` explícito (no `currentDateAndTime`, que es UTC).
 - PDF: `pdf` + `printing` (`PdfPreview` no se puede probar en widget tests: probar la generación
   de bytes con `cargarEstiloPdf()` tras `TestWidgetsFlutterBinding.ensureInitialized()`).
+
+- Cliente en **modales** (`screens/clientes/modales.dart`): `abrirFichaCliente`, `abrirFormularioCliente`,
+  `nuevoCliente`, `registrarPagoConComprobante`. Diálogo flotante si el ancho ≥ 720, pantalla completa
+  si no. Dentro del modal se navega con `Navigator.of(context).push(MaterialPageRoute)` (no go_router)
+  y se cierra con `cerrarModal(context, valor)`; los mensajes que deben verse al cerrar, con
+  `mensajeFueraDelModal`. Las rutas `/clientes/:id/...` siguen existiendo como páginas.
+- Gráficas: `fl_chart`. Colores de serie validados con la skill de visualización (incluido
+  daltonismo): altas `#0B7A54`, suspensiones `#C97A00`, cancelaciones `#7A5BD6`; leyenda con
+  totales, tooltip al pasar el mouse, una sola escala por gráfica.
 
 ## Identidad visual (NET_MAX)
 - Nombre visible: **NET_MAX** (nunca "NetMAX"). Lema: "Contigo más lejos, siempre con **Fe**".
@@ -173,6 +195,8 @@ docs/
 
 ## Transformación (antes de la versión instalable)
 - [x] Identidad visual NET_MAX (colores, tipografía, logo, íconos, PDF)
+- [x] Inicio interactivo con gráficas (cobranza y actividad de clientes), comprobantes de pago,
+      cliente en ventanas modales
 
 ## Futuro (no hacer todavía)
 Sincronización entre dispositivos, recordatorios por WhatsApp, mapa/GPS de clientes,
