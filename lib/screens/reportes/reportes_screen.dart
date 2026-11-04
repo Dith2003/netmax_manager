@@ -118,7 +118,7 @@ class ReportesScreen extends StatelessWidget {
                   accesos: _cobranza,
                 ),
                 _Grupo(
-                  titulo: 'Clientes',
+                  titulo: 'Clientes y cartera',
                   icono: Icons.people_outline,
                   color: ColoresNetMax.azul,
                   accesos: _clientes,

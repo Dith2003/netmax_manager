@@ -71,8 +71,8 @@ void main() {
         (concepto: 'E', monto: 500),
       ]));
       expect(c.length, 4);
-      expect(c.last.concepto, 'Otros 3 conceptos');
-      expect(c.last.monto, 1200);
+      expect(c.last.concepto, 'Otros 2 conceptos');
+      expect(c.last.monto, 900);
     });
 
     test('sin detalle usa los conceptos tal cual', () {

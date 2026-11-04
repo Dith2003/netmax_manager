@@ -62,7 +62,8 @@ class PanelLateral extends ConsumerWidget {
             Padding(
               padding: EdgeInsets.fromLTRB(extendido ? 20 : 12, 22, 12, 26),
               child: extendido
-                  ? const Align(
+                  ? const FittedBox(
+                      fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
                       child: MarcaNetMax(alto: 38, sobreOscuro: true, conLema: true),
                     )
@@ -237,14 +238,17 @@ class _ControlZoom extends StatelessWidget {
       return Column(children: [acercar, porcentaje, alejar]);
     }
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
           Icon(Icons.zoom_in, size: 18, color: crema.withValues(alpha: 0.7)),
           const SizedBox(width: 8),
-          Text('Zoom',
-              style: TextStyle(fontFamily: 'Outfit', color: crema.withValues(alpha: 0.8))),
-          const Spacer(),
+          Expanded(
+            child: Text('Zoom',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontFamily: 'Outfit', color: crema.withValues(alpha: 0.8))),
+          ),
           alejar,
           porcentaje,
           acercar,

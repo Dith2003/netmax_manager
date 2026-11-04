@@ -22,8 +22,11 @@ class ContenidoCentrado extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // heightFactor: 1 -> solo ocupa el alto del contenido (sirve también en
+    // barras inferiores, donde un Align normal llenaría toda la pantalla).
     return Align(
       alignment: Alignment.topCenter,
+      heightFactor: 1,
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: anchoMaximo),
         child: child,
@@ -122,7 +125,9 @@ class SeccionFormulario extends StatelessWidget {
               children: [
                 Icon(icono, size: 20, color: scheme.secondary),
                 const SizedBox(width: 8),
-                Text(titulo, style: Theme.of(context).textTheme.titleMedium),
+                Expanded(
+                  child: Text(titulo, style: Theme.of(context).textTheme.titleMedium),
+                ),
               ],
             ),
             const SizedBox(height: 14),
