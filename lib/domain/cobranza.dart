@@ -44,7 +44,21 @@ class Aplicacion {
   final int? periodoId;
   final int monto;
 
-  const Aplicacion({required this.mes, this.periodoId, required this.monto});
+  /// Lo que se debía de ese mes antes de este pago.
+  final int saldoAntes;
+
+  const Aplicacion({
+    required this.mes,
+    this.periodoId,
+    required this.monto,
+    required this.saldoAntes,
+  });
+
+  /// True si con este pago el mes queda totalmente pagado.
+  bool get completo => monto >= saldoAntes;
+
+  /// True si el mes no existía y lo crea este pago (pago adelantado).
+  bool get esNuevo => periodoId == null;
 
   @override
   String toString() => 'Aplicacion($mes, id: $periodoId, monto: $monto)';
@@ -97,7 +111,8 @@ ResultadoAplicacion aplicarPago({
     final saldo = p.saldo;
     if (saldo == 0) continue;
     final aplicado = saldo < restante ? saldo : restante;
-    aplicaciones.add(Aplicacion(mes: p.mes, periodoId: p.id, monto: aplicado));
+    aplicaciones.add(Aplicacion(
+        mes: p.mes, periodoId: p.id, monto: aplicado, saldoAntes: saldo));
     restante -= aplicado;
   }
 
@@ -111,7 +126,8 @@ ResultadoAplicacion aplicarPago({
       vencimiento: siguiente.fechaVencimiento(diaCorte),
       monto: precioMensual,
     ));
-    aplicaciones.add(Aplicacion(mes: siguiente, monto: aplicado));
+    aplicaciones.add(
+        Aplicacion(mes: siguiente, monto: aplicado, saldoAntes: precioMensual));
     restante -= aplicado;
     siguiente = siguiente.siguiente();
   }
@@ -162,4 +178,24 @@ Mes? pagadoHasta(List<PeriodoSaldo> periodos) {
     ultimo = p.mes;
   }
   return ultimo;
+}
+
+/// Describe una lista de meses de forma corta:
+/// [oct 2026] -> "oct 2026"; [oct, nov, dic 2026] -> "oct 2026 – dic 2026";
+/// meses no consecutivos -> "ago 2026, oct 2026".
+String describirMeses(List<Mes> meses) {
+  if (meses.isEmpty) return '';
+  final ordenados = [...meses]..sort();
+  if (ordenados.length == 1) return ordenados.first.nombreCorto;
+  var consecutivos = true;
+  for (var i = 1; i < ordenados.length; i++) {
+    if (ordenados[i - 1].siguiente() != ordenados[i]) {
+      consecutivos = false;
+      break;
+    }
+  }
+  if (consecutivos) {
+    return '${ordenados.first.nombreCorto} – ${ordenados.last.nombreCorto}';
+  }
+  return ordenados.map((m) => m.nombreCorto).join(', ');
 }

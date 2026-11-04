@@ -37,6 +37,9 @@ class Mes implements Comparable<Mes> {
   /// "noviembre 2026"
   String get nombre => '${_nombres[mes - 1]} $anio';
 
+  /// "nov 2026"
+  String get nombreCorto => '${_nombres[mes - 1].substring(0, 3)} $anio';
+
   @override
   int compareTo(Mes other) =>
       anio != other.anio ? anio.compareTo(other.anio) : mes.compareTo(other.mes);

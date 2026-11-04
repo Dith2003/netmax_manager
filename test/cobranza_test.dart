@@ -184,4 +184,35 @@ void main() {
       expect(pagadoHasta([periodo(1, '2026-10')]), isNull);
     });
   });
+
+  group('detalle del reparto', () {
+    test('indica si cada mes queda completo y si es adelantado', () {
+      final r = aplicarPago(
+        monto: 30000,
+        periodos: [periodo(1, '2026-10', pagado: 10000)],
+        precioMensual: 25000,
+        diaCorte: 5,
+        primerMes: Mes(2026, 10),
+      );
+      final oct = r.aplicaciones[0];
+      final nov = r.aplicaciones[1];
+      expect(oct.completo, isTrue);
+      expect(oct.esNuevo, isFalse);
+      expect(oct.saldoAntes, 15000);
+      expect(nov.esNuevo, isTrue);
+      expect(nov.completo, isFalse);
+      expect(nov.monto, 15000);
+      expect(nov.saldoAntes, 25000);
+    });
+  });
+
+  group('describirMeses', () {
+    test('un mes, rango consecutivo y meses salteados', () {
+      expect(describirMeses([]), '');
+      expect(describirMeses([Mes(2026, 10)]), 'oct 2026');
+      expect(describirMeses([Mes(2026, 12), Mes(2026, 11), Mes(2027, 1)]),
+          'nov 2026 – ene 2027');
+      expect(describirMeses([Mes(2026, 8), Mes(2026, 10)]), 'ago 2026, oct 2026');
+    });
+  });
 }

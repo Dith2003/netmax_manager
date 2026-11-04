@@ -31,3 +31,12 @@ extension EtiquetaPropiedadEquipo on PropiedadEquipo {
         PropiedadEquipo.netmax => 'De NetMAX',
       };
 }
+
+extension EtiquetaMetodoPago on MetodoPago {
+  String get etiqueta => switch (this) {
+        MetodoPago.efectivo => 'Efectivo',
+        MetodoPago.transferencia => 'Transferencia',
+        MetodoPago.deposito => 'Depósito',
+        MetodoPago.otro => 'Otro',
+      };
+}

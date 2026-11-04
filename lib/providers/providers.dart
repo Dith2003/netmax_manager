@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/db/database.dart';
 import '../data/repositories/clientes_repository.dart';
+import '../data/repositories/pagos_repository.dart';
+import '../domain/cobranza.dart';
 
 /// La base de datos se crea en main() y se inyecta con overrideWithValue.
 final databaseProvider = Provider<AppDatabase>(
@@ -38,4 +40,20 @@ final equiposProvider = StreamProvider.autoDispose.family<List<Equipo>, int>(
 final historialProvider =
     StreamProvider.autoDispose.family<List<HistorialEstado>, int>(
   (ref, clienteId) => ref.watch(clientesRepositoryProvider).vigilarHistorial(clienteId),
+);
+
+// ----- Pagos -----
+
+final pagosRepositoryProvider = Provider<PagosRepository>(
+  (ref) => PagosRepository(ref.watch(databaseProvider)),
+);
+
+/// Meses del cliente con lo pagado de cada uno.
+final periodosProvider = StreamProvider.autoDispose.family<List<PeriodoSaldo>, int>(
+  (ref, clienteId) => ref.watch(pagosRepositoryProvider).vigilarPeriodos(clienteId),
+);
+
+/// Pagos del cliente con los meses que cubrió cada uno.
+final pagosProvider = StreamProvider.autoDispose.family<List<PagoConDetalle>, int>(
+  (ref, clienteId) => ref.watch(pagosRepositoryProvider).vigilarPagos(clienteId),
 );
