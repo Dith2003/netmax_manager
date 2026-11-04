@@ -80,16 +80,18 @@ class EncabezadoSeccion extends StatelessWidget {
                 ),
                 const SizedBox(width: 14),
               ],
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(titulo,
-                      style: texto.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
-                  if (descripcion != null)
-                    Text(descripcion!,
-                        style: texto.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
-                ],
+              Flexible(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(titulo,
+                        style: texto.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+                    if (descripcion != null)
+                      Text(descripcion!,
+                          style: texto.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
+                  ],
+                ),
               ),
             ],
           ),

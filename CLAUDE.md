@@ -136,6 +136,9 @@ docs/
    actual en azul, los anteriores en verde); *actividad de clientes* = altas (por `fecha_alta`),
    suspensiones y cancelaciones (por fecha del cambio en `historial_estados`, sin contar el registro
    del alta). No se compara el mes en curso contra un mes completo con porcentajes.
+17. **Comprobante de pago**: N° = id del pago con 6 dígitos; conceptos = mensualidades y cargos que
+   cubrió; incluye "pagado hasta" y saldo pendiente a la fecha en que se genera. Se abre desde la
+   ficha (menú del pago), al registrar un pago y en Reportes > Comprobantes de pago.
 18. **Planes** (Configuración): se crean, editan y desactivan (no se borran). Desactivado = ya no
    se ofrece a clientes nuevos; quien lo tiene lo conserva. Debe quedar al menos uno activo. El
    precio del plan es solo el sugerido: cambiarlo no cambia el precio de clientes existentes.
@@ -143,9 +146,6 @@ docs/
 19. **Gestión en la lista de clientes**: cada renglón tiene Editar, Suspender/Reactivar y Cancelar
    servicio visibles (activo → suspender/cancelar; suspendido → reactivar/cancelar; cancelado →
    reactivar). La ficha muestra los mismos botones. Siempre se pide confirmación con motivo.
-17. **Comprobante de pago**: N° = id del pago con 6 dígitos; conceptos = mensualidades y cargos que
-   cubrió; incluye "pagado hasta" y saldo pendiente a la fecha en que se genera. Se abre desde la
-   ficha (menú del pago), al registrar un pago y en Reportes > Comprobantes de pago.
 
 ## Convenciones
 - Código y nombres de tablas en español sin acentos (`clientes`, `fecha_pago`).
