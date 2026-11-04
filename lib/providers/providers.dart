@@ -2,9 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/db/database.dart';
 import '../data/repositories/clientes_repository.dart';
+import '../data/repositories/dashboard_repository.dart';
 import '../data/repositories/pagos_repository.dart';
 import '../data/repositories/vencimientos_repository.dart';
 import '../domain/cobranza.dart';
+import '../domain/dashboard.dart';
 
 /// La base de datos se crea en main() y se inyecta con overrideWithValue.
 final databaseProvider = Provider<AppDatabase>(
@@ -73,4 +75,15 @@ final adeudosProvider = StreamProvider.autoDispose<List<AdeudoCliente>>(
 /// Cargos extra vigentes del cliente con lo pagado de cada uno.
 final cargosProvider = StreamProvider.autoDispose.family<List<CargoSaldo>, int>(
   (ref, clienteId) => ref.watch(vencimientosRepositoryProvider).vigilarCargos(clienteId),
+);
+
+// ----- Inicio -----
+
+final dashboardRepositoryProvider = Provider<DashboardRepository>(
+  (ref) => DashboardRepository(ref.watch(databaseProvider)),
+);
+
+/// Resumen de la pantalla de inicio a la fecha de hoy.
+final resumenProvider = StreamProvider.autoDispose<ResumenDashboard>(
+  (ref) => ref.watch(dashboardRepositoryProvider).vigilarResumen(DateTime.now()),
 );
