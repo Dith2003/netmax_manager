@@ -32,6 +32,21 @@ void main() {
         VALUES ('Ana', 1, 25000, 5, 'equipoPropio', '2025-03-15T00:00:00.000',
           '2025-03-15T00:00:00.000')
       ''');
+      raw.execute('''
+        CREATE TABLE usuarios (
+          id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+          nombre TEXT NOT NULL,
+          usuario TEXT NOT NULL UNIQUE,
+          pin_hash TEXT NOT NULL,
+          rol TEXT NOT NULL,
+          activo INTEGER NOT NULL DEFAULT 1,
+          creado_en TEXT NOT NULL
+        )
+      ''');
+      raw.execute('''
+        INSERT INTO usuarios (nombre, usuario, pin_hash, rol, creado_en)
+        VALUES ('Luis', 'luis', 'x', 'admin', '2026-11-01T00:00:00.000')
+      ''');
       raw.userVersion = 1;
     }));
     addTearDown(db.close);
@@ -49,6 +64,12 @@ void main() {
 
     // v4: columna de la contratación personalizada (vacía en los clientes existentes).
     expect(clientes.single.tipoContratacionDetalle, isNull);
+
+    // v5: permisos individuales; los usuarios existentes quedan sin permisos guardados
+    // (usan los de su perfil).
+    final luis = await db.select(db.usuarios).getSingle();
+    expect(luis.permisos, isNull);
+    expect(luis.rol, RolUsuario.admin);
 
     final version = await db.customSelect('PRAGMA user_version').getSingle();
     expect(version.read<int>('user_version'), 5);
