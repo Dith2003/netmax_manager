@@ -95,8 +95,12 @@ class EstadoCuentaScreen extends ConsumerWidget {
       ),
     );
     if (!context.mounted) return;
-    if (opcion == 'mes') await _agregarMes(context, ref, periodos);
-    if (opcion == 'cargo') await _agregarCargo(context, ref);
+    switch (opcion) {
+      case 'mes':
+        await _agregarMes(context, ref, periodos);
+      case 'cargo':
+        await _agregarCargo(context, ref);
+    }
   }
 
   @override

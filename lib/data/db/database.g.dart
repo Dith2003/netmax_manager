@@ -4047,6 +4047,830 @@ class PagoAplicacionesCompanion extends UpdateCompanion<PagoAplicacion> {
   }
 }
 
+class $CargosTable extends Cargos with TableInfo<$CargosTable, Cargo> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CargosTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _clienteIdMeta = const VerificationMeta(
+    'clienteId',
+  );
+  @override
+  late final GeneratedColumn<int> clienteId = GeneratedColumn<int>(
+    'cliente_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES clientes (id)',
+    ),
+  );
+  static const VerificationMeta _fechaMeta = const VerificationMeta('fecha');
+  @override
+  late final GeneratedColumn<DateTime> fecha = GeneratedColumn<DateTime>(
+    'fecha',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _conceptoMeta = const VerificationMeta(
+    'concepto',
+  );
+  @override
+  late final GeneratedColumn<String> concepto = GeneratedColumn<String>(
+    'concepto',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _montoMeta = const VerificationMeta('monto');
+  @override
+  late final GeneratedColumn<int> monto = GeneratedColumn<int>(
+    'monto',
+    aliasedName,
+    false,
+    check: () => ComparableExpr(monto).isBiggerThanValue(0),
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _equipoIdMeta = const VerificationMeta(
+    'equipoId',
+  );
+  @override
+  late final GeneratedColumn<int> equipoId = GeneratedColumn<int>(
+    'equipo_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES equipos (id)',
+    ),
+  );
+  static const VerificationMeta _canceladoMeta = const VerificationMeta(
+    'cancelado',
+  );
+  @override
+  late final GeneratedColumn<bool> cancelado = GeneratedColumn<bool>(
+    'cancelado',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("cancelado" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _notasMeta = const VerificationMeta('notas');
+  @override
+  late final GeneratedColumn<String> notas = GeneratedColumn<String>(
+    'notas',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _creadoEnMeta = const VerificationMeta(
+    'creadoEn',
+  );
+  @override
+  late final GeneratedColumn<DateTime> creadoEn = GeneratedColumn<DateTime>(
+    'creado_en',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    clienteId,
+    fecha,
+    concepto,
+    monto,
+    equipoId,
+    cancelado,
+    notas,
+    creadoEn,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cargos';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Cargo> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('cliente_id')) {
+      context.handle(
+        _clienteIdMeta,
+        clienteId.isAcceptableOrUnknown(data['cliente_id']!, _clienteIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_clienteIdMeta);
+    }
+    if (data.containsKey('fecha')) {
+      context.handle(
+        _fechaMeta,
+        fecha.isAcceptableOrUnknown(data['fecha']!, _fechaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaMeta);
+    }
+    if (data.containsKey('concepto')) {
+      context.handle(
+        _conceptoMeta,
+        concepto.isAcceptableOrUnknown(data['concepto']!, _conceptoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_conceptoMeta);
+    }
+    if (data.containsKey('monto')) {
+      context.handle(
+        _montoMeta,
+        monto.isAcceptableOrUnknown(data['monto']!, _montoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_montoMeta);
+    }
+    if (data.containsKey('equipo_id')) {
+      context.handle(
+        _equipoIdMeta,
+        equipoId.isAcceptableOrUnknown(data['equipo_id']!, _equipoIdMeta),
+      );
+    }
+    if (data.containsKey('cancelado')) {
+      context.handle(
+        _canceladoMeta,
+        cancelado.isAcceptableOrUnknown(data['cancelado']!, _canceladoMeta),
+      );
+    }
+    if (data.containsKey('notas')) {
+      context.handle(
+        _notasMeta,
+        notas.isAcceptableOrUnknown(data['notas']!, _notasMeta),
+      );
+    }
+    if (data.containsKey('creado_en')) {
+      context.handle(
+        _creadoEnMeta,
+        creadoEn.isAcceptableOrUnknown(data['creado_en']!, _creadoEnMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_creadoEnMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Cargo map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Cargo(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      clienteId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}cliente_id'],
+      )!,
+      fecha: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha'],
+      )!,
+      concepto: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}concepto'],
+      )!,
+      monto: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}monto'],
+      )!,
+      equipoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}equipo_id'],
+      ),
+      cancelado: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}cancelado'],
+      )!,
+      notas: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notas'],
+      ),
+      creadoEn: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}creado_en'],
+      )!,
+    );
+  }
+
+  @override
+  $CargosTable createAlias(String alias) {
+    return $CargosTable(attachedDatabase, alias);
+  }
+}
+
+class Cargo extends DataClass implements Insertable<Cargo> {
+  final int id;
+  final int clienteId;
+  final DateTime fecha;
+  final String concepto;
+  final int monto;
+
+  /// Equipo relacionado (si el cargo es por equipo no devuelto).
+  final int? equipoId;
+  final bool cancelado;
+  final String? notas;
+  final DateTime creadoEn;
+  const Cargo({
+    required this.id,
+    required this.clienteId,
+    required this.fecha,
+    required this.concepto,
+    required this.monto,
+    this.equipoId,
+    required this.cancelado,
+    this.notas,
+    required this.creadoEn,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['cliente_id'] = Variable<int>(clienteId);
+    map['fecha'] = Variable<DateTime>(fecha);
+    map['concepto'] = Variable<String>(concepto);
+    map['monto'] = Variable<int>(monto);
+    if (!nullToAbsent || equipoId != null) {
+      map['equipo_id'] = Variable<int>(equipoId);
+    }
+    map['cancelado'] = Variable<bool>(cancelado);
+    if (!nullToAbsent || notas != null) {
+      map['notas'] = Variable<String>(notas);
+    }
+    map['creado_en'] = Variable<DateTime>(creadoEn);
+    return map;
+  }
+
+  CargosCompanion toCompanion(bool nullToAbsent) {
+    return CargosCompanion(
+      id: Value(id),
+      clienteId: Value(clienteId),
+      fecha: Value(fecha),
+      concepto: Value(concepto),
+      monto: Value(monto),
+      equipoId: equipoId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(equipoId),
+      cancelado: Value(cancelado),
+      notas: notas == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notas),
+      creadoEn: Value(creadoEn),
+    );
+  }
+
+  factory Cargo.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Cargo(
+      id: serializer.fromJson<int>(json['id']),
+      clienteId: serializer.fromJson<int>(json['clienteId']),
+      fecha: serializer.fromJson<DateTime>(json['fecha']),
+      concepto: serializer.fromJson<String>(json['concepto']),
+      monto: serializer.fromJson<int>(json['monto']),
+      equipoId: serializer.fromJson<int?>(json['equipoId']),
+      cancelado: serializer.fromJson<bool>(json['cancelado']),
+      notas: serializer.fromJson<String?>(json['notas']),
+      creadoEn: serializer.fromJson<DateTime>(json['creadoEn']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'clienteId': serializer.toJson<int>(clienteId),
+      'fecha': serializer.toJson<DateTime>(fecha),
+      'concepto': serializer.toJson<String>(concepto),
+      'monto': serializer.toJson<int>(monto),
+      'equipoId': serializer.toJson<int?>(equipoId),
+      'cancelado': serializer.toJson<bool>(cancelado),
+      'notas': serializer.toJson<String?>(notas),
+      'creadoEn': serializer.toJson<DateTime>(creadoEn),
+    };
+  }
+
+  Cargo copyWith({
+    int? id,
+    int? clienteId,
+    DateTime? fecha,
+    String? concepto,
+    int? monto,
+    Value<int?> equipoId = const Value.absent(),
+    bool? cancelado,
+    Value<String?> notas = const Value.absent(),
+    DateTime? creadoEn,
+  }) => Cargo(
+    id: id ?? this.id,
+    clienteId: clienteId ?? this.clienteId,
+    fecha: fecha ?? this.fecha,
+    concepto: concepto ?? this.concepto,
+    monto: monto ?? this.monto,
+    equipoId: equipoId.present ? equipoId.value : this.equipoId,
+    cancelado: cancelado ?? this.cancelado,
+    notas: notas.present ? notas.value : this.notas,
+    creadoEn: creadoEn ?? this.creadoEn,
+  );
+  Cargo copyWithCompanion(CargosCompanion data) {
+    return Cargo(
+      id: data.id.present ? data.id.value : this.id,
+      clienteId: data.clienteId.present ? data.clienteId.value : this.clienteId,
+      fecha: data.fecha.present ? data.fecha.value : this.fecha,
+      concepto: data.concepto.present ? data.concepto.value : this.concepto,
+      monto: data.monto.present ? data.monto.value : this.monto,
+      equipoId: data.equipoId.present ? data.equipoId.value : this.equipoId,
+      cancelado: data.cancelado.present ? data.cancelado.value : this.cancelado,
+      notas: data.notas.present ? data.notas.value : this.notas,
+      creadoEn: data.creadoEn.present ? data.creadoEn.value : this.creadoEn,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Cargo(')
+          ..write('id: $id, ')
+          ..write('clienteId: $clienteId, ')
+          ..write('fecha: $fecha, ')
+          ..write('concepto: $concepto, ')
+          ..write('monto: $monto, ')
+          ..write('equipoId: $equipoId, ')
+          ..write('cancelado: $cancelado, ')
+          ..write('notas: $notas, ')
+          ..write('creadoEn: $creadoEn')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    clienteId,
+    fecha,
+    concepto,
+    monto,
+    equipoId,
+    cancelado,
+    notas,
+    creadoEn,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Cargo &&
+          other.id == this.id &&
+          other.clienteId == this.clienteId &&
+          other.fecha == this.fecha &&
+          other.concepto == this.concepto &&
+          other.monto == this.monto &&
+          other.equipoId == this.equipoId &&
+          other.cancelado == this.cancelado &&
+          other.notas == this.notas &&
+          other.creadoEn == this.creadoEn);
+}
+
+class CargosCompanion extends UpdateCompanion<Cargo> {
+  final Value<int> id;
+  final Value<int> clienteId;
+  final Value<DateTime> fecha;
+  final Value<String> concepto;
+  final Value<int> monto;
+  final Value<int?> equipoId;
+  final Value<bool> cancelado;
+  final Value<String?> notas;
+  final Value<DateTime> creadoEn;
+  const CargosCompanion({
+    this.id = const Value.absent(),
+    this.clienteId = const Value.absent(),
+    this.fecha = const Value.absent(),
+    this.concepto = const Value.absent(),
+    this.monto = const Value.absent(),
+    this.equipoId = const Value.absent(),
+    this.cancelado = const Value.absent(),
+    this.notas = const Value.absent(),
+    this.creadoEn = const Value.absent(),
+  });
+  CargosCompanion.insert({
+    this.id = const Value.absent(),
+    required int clienteId,
+    required DateTime fecha,
+    required String concepto,
+    required int monto,
+    this.equipoId = const Value.absent(),
+    this.cancelado = const Value.absent(),
+    this.notas = const Value.absent(),
+    required DateTime creadoEn,
+  }) : clienteId = Value(clienteId),
+       fecha = Value(fecha),
+       concepto = Value(concepto),
+       monto = Value(monto),
+       creadoEn = Value(creadoEn);
+  static Insertable<Cargo> custom({
+    Expression<int>? id,
+    Expression<int>? clienteId,
+    Expression<DateTime>? fecha,
+    Expression<String>? concepto,
+    Expression<int>? monto,
+    Expression<int>? equipoId,
+    Expression<bool>? cancelado,
+    Expression<String>? notas,
+    Expression<DateTime>? creadoEn,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (clienteId != null) 'cliente_id': clienteId,
+      if (fecha != null) 'fecha': fecha,
+      if (concepto != null) 'concepto': concepto,
+      if (monto != null) 'monto': monto,
+      if (equipoId != null) 'equipo_id': equipoId,
+      if (cancelado != null) 'cancelado': cancelado,
+      if (notas != null) 'notas': notas,
+      if (creadoEn != null) 'creado_en': creadoEn,
+    });
+  }
+
+  CargosCompanion copyWith({
+    Value<int>? id,
+    Value<int>? clienteId,
+    Value<DateTime>? fecha,
+    Value<String>? concepto,
+    Value<int>? monto,
+    Value<int?>? equipoId,
+    Value<bool>? cancelado,
+    Value<String?>? notas,
+    Value<DateTime>? creadoEn,
+  }) {
+    return CargosCompanion(
+      id: id ?? this.id,
+      clienteId: clienteId ?? this.clienteId,
+      fecha: fecha ?? this.fecha,
+      concepto: concepto ?? this.concepto,
+      monto: monto ?? this.monto,
+      equipoId: equipoId ?? this.equipoId,
+      cancelado: cancelado ?? this.cancelado,
+      notas: notas ?? this.notas,
+      creadoEn: creadoEn ?? this.creadoEn,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (clienteId.present) {
+      map['cliente_id'] = Variable<int>(clienteId.value);
+    }
+    if (fecha.present) {
+      map['fecha'] = Variable<DateTime>(fecha.value);
+    }
+    if (concepto.present) {
+      map['concepto'] = Variable<String>(concepto.value);
+    }
+    if (monto.present) {
+      map['monto'] = Variable<int>(monto.value);
+    }
+    if (equipoId.present) {
+      map['equipo_id'] = Variable<int>(equipoId.value);
+    }
+    if (cancelado.present) {
+      map['cancelado'] = Variable<bool>(cancelado.value);
+    }
+    if (notas.present) {
+      map['notas'] = Variable<String>(notas.value);
+    }
+    if (creadoEn.present) {
+      map['creado_en'] = Variable<DateTime>(creadoEn.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CargosCompanion(')
+          ..write('id: $id, ')
+          ..write('clienteId: $clienteId, ')
+          ..write('fecha: $fecha, ')
+          ..write('concepto: $concepto, ')
+          ..write('monto: $monto, ')
+          ..write('equipoId: $equipoId, ')
+          ..write('cancelado: $cancelado, ')
+          ..write('notas: $notas, ')
+          ..write('creadoEn: $creadoEn')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CargoAplicacionesTable extends CargoAplicaciones
+    with TableInfo<$CargoAplicacionesTable, CargoAplicacion> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CargoAplicacionesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _pagoIdMeta = const VerificationMeta('pagoId');
+  @override
+  late final GeneratedColumn<int> pagoId = GeneratedColumn<int>(
+    'pago_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES pagos (id)',
+    ),
+  );
+  static const VerificationMeta _cargoIdMeta = const VerificationMeta(
+    'cargoId',
+  );
+  @override
+  late final GeneratedColumn<int> cargoId = GeneratedColumn<int>(
+    'cargo_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES cargos (id)',
+    ),
+  );
+  static const VerificationMeta _montoMeta = const VerificationMeta('monto');
+  @override
+  late final GeneratedColumn<int> monto = GeneratedColumn<int>(
+    'monto',
+    aliasedName,
+    false,
+    check: () => ComparableExpr(monto).isBiggerThanValue(0),
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [pagoId, cargoId, monto];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cargo_aplicaciones';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CargoAplicacion> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('pago_id')) {
+      context.handle(
+        _pagoIdMeta,
+        pagoId.isAcceptableOrUnknown(data['pago_id']!, _pagoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pagoIdMeta);
+    }
+    if (data.containsKey('cargo_id')) {
+      context.handle(
+        _cargoIdMeta,
+        cargoId.isAcceptableOrUnknown(data['cargo_id']!, _cargoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cargoIdMeta);
+    }
+    if (data.containsKey('monto')) {
+      context.handle(
+        _montoMeta,
+        monto.isAcceptableOrUnknown(data['monto']!, _montoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_montoMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {pagoId, cargoId};
+  @override
+  CargoAplicacion map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CargoAplicacion(
+      pagoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}pago_id'],
+      )!,
+      cargoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}cargo_id'],
+      )!,
+      monto: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}monto'],
+      )!,
+    );
+  }
+
+  @override
+  $CargoAplicacionesTable createAlias(String alias) {
+    return $CargoAplicacionesTable(attachedDatabase, alias);
+  }
+}
+
+class CargoAplicacion extends DataClass implements Insertable<CargoAplicacion> {
+  final int pagoId;
+  final int cargoId;
+  final int monto;
+  const CargoAplicacion({
+    required this.pagoId,
+    required this.cargoId,
+    required this.monto,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['pago_id'] = Variable<int>(pagoId);
+    map['cargo_id'] = Variable<int>(cargoId);
+    map['monto'] = Variable<int>(monto);
+    return map;
+  }
+
+  CargoAplicacionesCompanion toCompanion(bool nullToAbsent) {
+    return CargoAplicacionesCompanion(
+      pagoId: Value(pagoId),
+      cargoId: Value(cargoId),
+      monto: Value(monto),
+    );
+  }
+
+  factory CargoAplicacion.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CargoAplicacion(
+      pagoId: serializer.fromJson<int>(json['pagoId']),
+      cargoId: serializer.fromJson<int>(json['cargoId']),
+      monto: serializer.fromJson<int>(json['monto']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'pagoId': serializer.toJson<int>(pagoId),
+      'cargoId': serializer.toJson<int>(cargoId),
+      'monto': serializer.toJson<int>(monto),
+    };
+  }
+
+  CargoAplicacion copyWith({int? pagoId, int? cargoId, int? monto}) =>
+      CargoAplicacion(
+        pagoId: pagoId ?? this.pagoId,
+        cargoId: cargoId ?? this.cargoId,
+        monto: monto ?? this.monto,
+      );
+  CargoAplicacion copyWithCompanion(CargoAplicacionesCompanion data) {
+    return CargoAplicacion(
+      pagoId: data.pagoId.present ? data.pagoId.value : this.pagoId,
+      cargoId: data.cargoId.present ? data.cargoId.value : this.cargoId,
+      monto: data.monto.present ? data.monto.value : this.monto,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CargoAplicacion(')
+          ..write('pagoId: $pagoId, ')
+          ..write('cargoId: $cargoId, ')
+          ..write('monto: $monto')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(pagoId, cargoId, monto);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CargoAplicacion &&
+          other.pagoId == this.pagoId &&
+          other.cargoId == this.cargoId &&
+          other.monto == this.monto);
+}
+
+class CargoAplicacionesCompanion extends UpdateCompanion<CargoAplicacion> {
+  final Value<int> pagoId;
+  final Value<int> cargoId;
+  final Value<int> monto;
+  final Value<int> rowid;
+  const CargoAplicacionesCompanion({
+    this.pagoId = const Value.absent(),
+    this.cargoId = const Value.absent(),
+    this.monto = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CargoAplicacionesCompanion.insert({
+    required int pagoId,
+    required int cargoId,
+    required int monto,
+    this.rowid = const Value.absent(),
+  }) : pagoId = Value(pagoId),
+       cargoId = Value(cargoId),
+       monto = Value(monto);
+  static Insertable<CargoAplicacion> custom({
+    Expression<int>? pagoId,
+    Expression<int>? cargoId,
+    Expression<int>? monto,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (pagoId != null) 'pago_id': pagoId,
+      if (cargoId != null) 'cargo_id': cargoId,
+      if (monto != null) 'monto': monto,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CargoAplicacionesCompanion copyWith({
+    Value<int>? pagoId,
+    Value<int>? cargoId,
+    Value<int>? monto,
+    Value<int>? rowid,
+  }) {
+    return CargoAplicacionesCompanion(
+      pagoId: pagoId ?? this.pagoId,
+      cargoId: cargoId ?? this.cargoId,
+      monto: monto ?? this.monto,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (pagoId.present) {
+      map['pago_id'] = Variable<int>(pagoId.value);
+    }
+    if (cargoId.present) {
+      map['cargo_id'] = Variable<int>(cargoId.value);
+    }
+    if (monto.present) {
+      map['monto'] = Variable<int>(monto.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CargoAplicacionesCompanion(')
+          ..write('pagoId: $pagoId, ')
+          ..write('cargoId: $cargoId, ')
+          ..write('monto: $monto, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $HistorialEstadosTable extends HistorialEstados
     with TableInfo<$HistorialEstadosTable, HistorialEstado> {
   @override
@@ -5200,6 +6024,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PagoAplicacionesTable pagoAplicaciones = $PagoAplicacionesTable(
     this,
   );
+  late final $CargosTable cargos = $CargosTable(this);
+  late final $CargoAplicacionesTable cargoAplicaciones =
+      $CargoAplicacionesTable(this);
   late final $HistorialEstadosTable historialEstados = $HistorialEstadosTable(
     this,
   );
@@ -5220,6 +6047,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     periodos,
     pagos,
     pagoAplicaciones,
+    cargos,
+    cargoAplicaciones,
     historialEstados,
     gastos,
     configuraciones,
@@ -6184,6 +7013,25 @@ final class $$ClientesTableReferences
     );
   }
 
+  static MultiTypedResultKey<$CargosTable, List<Cargo>> _cargosRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.cargos,
+    aliasName: 'clientes__id__cargos__cliente_id',
+  );
+
+  $$CargosTableProcessedTableManager get cargosRefs {
+    final manager = $$CargosTableTableManager(
+      $_db,
+      $_db.cargos,
+    ).filter((f) => f.clienteId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_cargosRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
   static MultiTypedResultKey<$HistorialEstadosTable, List<HistorialEstado>>
   _historialEstadosRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.historialEstados,
@@ -6400,6 +7248,31 @@ class $$ClientesTableFilterComposer
           }) => $$PagosTableFilterComposer(
             $db: $db,
             $table: $db.pagos,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> cargosRefs(
+    Expression<bool> Function($$CargosTableFilterComposer f) f,
+  ) {
+    final $$CargosTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.cargos,
+      getReferencedColumn: (t) => t.clienteId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CargosTableFilterComposer(
+            $db: $db,
+            $table: $db.cargos,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -6721,6 +7594,31 @@ class $$ClientesTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> cargosRefs<T extends Object>(
+    Expression<T> Function($$CargosTableAnnotationComposer a) f,
+  ) {
+    final $$CargosTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.cargos,
+      getReferencedColumn: (t) => t.clienteId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CargosTableAnnotationComposer(
+            $db: $db,
+            $table: $db.cargos,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> historialEstadosRefs<T extends Object>(
     Expression<T> Function($$HistorialEstadosTableAnnotationComposer a) f,
   ) {
@@ -6766,6 +7664,7 @@ class $$ClientesTableTableManager
             bool equiposRefs,
             bool periodosRefs,
             bool pagosRefs,
+            bool cargosRefs,
             bool historialEstadosRefs,
           })
         > {
@@ -6863,6 +7762,7 @@ class $$ClientesTableTableManager
                 equiposRefs = false,
                 periodosRefs = false,
                 pagosRefs = false,
+                cargosRefs = false,
                 historialEstadosRefs = false,
               }) {
                 return PrefetchHooks(
@@ -6872,6 +7772,7 @@ class $$ClientesTableTableManager
                     if (equiposRefs) db.equipos,
                     if (periodosRefs) db.periodos,
                     if (pagosRefs) db.pagos,
+                    if (cargosRefs) db.cargos,
                     if (historialEstadosRefs) db.historialEstados,
                   ],
                   addJoins:
@@ -6986,6 +7887,26 @@ class $$ClientesTableTableManager
                           referencedColumn: 'cliente_id',
                           typedResults: items,
                         ),
+                      if (cargosRefs)
+                        await $_getPrefetchedDataByColumns<
+                          Cliente,
+                          $ClientesTable,
+                          Cargo,
+                          $CargosTable
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ClientesTableReferences
+                              ._cargosRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ClientesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).cargosRefs,
+                          currentColumn: 'id',
+                          referencedColumn: 'cliente_id',
+                          typedResults: items,
+                        ),
                       if (historialEstadosRefs)
                         await $_getPrefetchedDataByColumns<
                           Cliente,
@@ -7032,6 +7953,7 @@ typedef $$ClientesTableProcessedTableManager =
         bool equiposRefs,
         bool periodosRefs,
         bool pagosRefs,
+        bool cargosRefs,
         bool historialEstadosRefs,
       })
     >;
@@ -7431,6 +8353,25 @@ final class $$EquiposTableReferences
       manager.$state.copyWith(prefetchedData: [item]),
     );
   }
+
+  static MultiTypedResultKey<$CargosTable, List<Cargo>> _cargosRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.cargos,
+    aliasName: 'equipos__id__cargos__equipo_id',
+  );
+
+  $$CargosTableProcessedTableManager get cargosRefs {
+    final manager = $$CargosTableTableManager(
+      $_db,
+      $_db.cargos,
+    ).filter((f) => f.equipoId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_cargosRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$EquiposTableFilterComposer
@@ -7509,6 +8450,31 @@ class $$EquiposTableFilterComposer
           ),
     );
     return composer;
+  }
+
+  Expression<bool> cargosRefs(
+    Expression<bool> Function($$CargosTableFilterComposer f) f,
+  ) {
+    final $$CargosTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.cargos,
+      getReferencedColumn: (t) => t.equipoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CargosTableFilterComposer(
+            $db: $db,
+            $table: $db.cargos,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
   }
 }
 
@@ -7656,6 +8622,31 @@ class $$EquiposTableAnnotationComposer
     );
     return composer;
   }
+
+  Expression<T> cargosRefs<T extends Object>(
+    Expression<T> Function($$CargosTableAnnotationComposer a) f,
+  ) {
+    final $$CargosTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.cargos,
+      getReferencedColumn: (t) => t.equipoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CargosTableAnnotationComposer(
+            $db: $db,
+            $table: $db.cargos,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$EquiposTableTableManager
@@ -7671,7 +8662,7 @@ class $$EquiposTableTableManager
           $$EquiposTableUpdateCompanionBuilder,
           (Equipo, $$EquiposTableReferences),
           Equipo,
-          PrefetchHooks Function({bool clienteId})
+          PrefetchHooks Function({bool clienteId, bool cargosRefs})
         > {
   $$EquiposTableTableManager(_$AppDatabase db, $EquiposTable table)
     : super(
@@ -7740,10 +8731,10 @@ class $$EquiposTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({clienteId = false}) {
+          prefetchHooksCallback: ({clienteId = false, cargosRefs = false}) {
             return PrefetchHooks(
               db: db,
-              explicitlyWatchedTables: [],
+              explicitlyWatchedTables: [if (cargosRefs) db.cargos],
               addJoins:
                   <
                     T extends TableManagerState<
@@ -7775,7 +8766,24 @@ class $$EquiposTableTableManager
                     return state;
                   },
               getPrefetchedDataCallback: (items) async {
-                return [];
+                return [
+                  if (cargosRefs)
+                    await $_getPrefetchedDataByColumns<
+                      Equipo,
+                      $EquiposTable,
+                      Cargo,
+                      $CargosTable
+                    >(
+                      currentTable: table,
+                      referencedTable: $$EquiposTableReferences
+                          ._cargosRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$EquiposTableReferences(db, table, p0).cargosRefs,
+                      currentColumn: 'id',
+                      referencedColumn: 'equipo_id',
+                      typedResults: items,
+                    ),
+                ];
               },
             );
           },
@@ -7795,7 +8803,7 @@ typedef $$EquiposTableProcessedTableManager =
       $$EquiposTableUpdateCompanionBuilder,
       (Equipo, $$EquiposTableReferences),
       Equipo,
-      PrefetchHooks Function({bool clienteId})
+      PrefetchHooks Function({bool clienteId, bool cargosRefs})
     >;
 typedef $$PeriodosTableCreateCompanionBuilder = PeriodosCompanion Function({
   Value<int> id,
@@ -8303,6 +9311,27 @@ final class $$PagosTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$CargoAplicacionesTable, List<CargoAplicacion>>
+  _cargoAplicacionesRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.cargoAplicaciones,
+        aliasName: 'pagos__id__cargo_aplicaciones__pago_id',
+      );
+
+  $$CargoAplicacionesTableProcessedTableManager get cargoAplicacionesRefs {
+    final manager = $$CargoAplicacionesTableTableManager(
+      $_db,
+      $_db.cargoAplicaciones,
+    ).filter((f) => f.pagoId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _cargoAplicacionesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$PagosTableFilterComposer extends Composer<_$AppDatabase, $PagosTable> {
@@ -8416,6 +9445,31 @@ class $$PagosTableFilterComposer extends Composer<_$AppDatabase, $PagosTable> {
           }) => $$PagoAplicacionesTableFilterComposer(
             $db: $db,
             $table: $db.pagoAplicaciones,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> cargoAplicacionesRefs(
+    Expression<bool> Function($$CargoAplicacionesTableFilterComposer f) f,
+  ) {
+    final $$CargoAplicacionesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.cargoAplicaciones,
+      getReferencedColumn: (t) => t.pagoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CargoAplicacionesTableFilterComposer(
+            $db: $db,
+            $table: $db.cargoAplicaciones,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -8625,6 +9679,32 @@ class $$PagosTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> cargoAplicacionesRefs<T extends Object>(
+    Expression<T> Function($$CargoAplicacionesTableAnnotationComposer a) f,
+  ) {
+    final $$CargoAplicacionesTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.cargoAplicaciones,
+          getReferencedColumn: (t) => t.pagoId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CargoAplicacionesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.cargoAplicaciones,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$PagosTableTableManager
@@ -8644,6 +9724,7 @@ class $$PagosTableTableManager
             bool clienteId,
             bool registradoPor,
             bool pagoAplicacionesRefs,
+            bool cargoAplicacionesRefs,
           })
         > {
   $$PagosTableTableManager(_$AppDatabase db, $PagosTable table)
@@ -8718,11 +9799,13 @@ class $$PagosTableTableManager
                 clienteId = false,
                 registradoPor = false,
                 pagoAplicacionesRefs = false,
+                cargoAplicacionesRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (pagoAplicacionesRefs) db.pagoAplicaciones,
+                    if (cargoAplicacionesRefs) db.cargoAplicaciones,
                   ],
                   addJoins:
                       <
@@ -8787,6 +9870,26 @@ class $$PagosTableTableManager
                           referencedColumn: 'pago_id',
                           typedResults: items,
                         ),
+                      if (cargoAplicacionesRefs)
+                        await $_getPrefetchedDataByColumns<
+                          Pago,
+                          $PagosTable,
+                          CargoAplicacion,
+                          $CargoAplicacionesTable
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PagosTableReferences
+                              ._cargoAplicacionesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PagosTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).cargoAplicacionesRefs,
+                          currentColumn: 'id',
+                          referencedColumn: 'pago_id',
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -8811,6 +9914,7 @@ typedef $$PagosTableProcessedTableManager =
         bool clienteId,
         bool registradoPor,
         bool pagoAplicacionesRefs,
+        bool cargoAplicacionesRefs,
       })
     >;
 typedef $$PagoAplicacionesTableCreateCompanionBuilder =
@@ -9180,6 +10284,956 @@ typedef $$PagoAplicacionesTableProcessedTableManager =
       (PagoAplicacion, $$PagoAplicacionesTableReferences),
       PagoAplicacion,
       PrefetchHooks Function({bool pagoId, bool periodoId})
+    >;
+typedef $$CargosTableCreateCompanionBuilder = CargosCompanion Function({
+  Value<int> id,
+  required int clienteId,
+  required DateTime fecha,
+  required String concepto,
+  required int monto,
+  Value<int?> equipoId,
+  Value<bool> cancelado,
+  Value<String?> notas,
+  required DateTime creadoEn,
+});
+typedef $$CargosTableUpdateCompanionBuilder = CargosCompanion Function({
+  Value<int> id,
+  Value<int> clienteId,
+  Value<DateTime> fecha,
+  Value<String> concepto,
+  Value<int> monto,
+  Value<int?> equipoId,
+  Value<bool> cancelado,
+  Value<String?> notas,
+  Value<DateTime> creadoEn,
+});
+
+final class $$CargosTableReferences
+    extends BaseReferences<_$AppDatabase, $CargosTable, Cargo> {
+  $$CargosTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $ClientesTable _clienteIdTable(_$AppDatabase db) =>
+      db.clientes.createAlias('cargos__cliente_id__clientes__id');
+
+  $$ClientesTableProcessedTableManager get clienteId {
+    final $_column = $_itemColumn<int>('cliente_id')!;
+
+    final manager = $$ClientesTableTableManager(
+      $_db,
+      $_db.clientes,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_clienteIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $EquiposTable _equipoIdTable(_$AppDatabase db) =>
+      db.equipos.createAlias('cargos__equipo_id__equipos__id');
+
+  $$EquiposTableProcessedTableManager? get equipoId {
+    final $_column = $_itemColumn<int>('equipo_id');
+    if ($_column == null) return null;
+    final manager = $$EquiposTableTableManager(
+      $_db,
+      $_db.equipos,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_equipoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$CargoAplicacionesTable, List<CargoAplicacion>>
+  _cargoAplicacionesRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.cargoAplicaciones,
+        aliasName: 'cargos__id__cargo_aplicaciones__cargo_id',
+      );
+
+  $$CargoAplicacionesTableProcessedTableManager get cargoAplicacionesRefs {
+    final manager = $$CargoAplicacionesTableTableManager(
+      $_db,
+      $_db.cargoAplicaciones,
+    ).filter((f) => f.cargoId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _cargoAplicacionesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$CargosTableFilterComposer
+    extends Composer<_$AppDatabase, $CargosTable> {
+  $$CargosTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fecha => $composableBuilder(
+    column: $table.fecha,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get concepto => $composableBuilder(
+    column: $table.concepto,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get monto => $composableBuilder(
+    column: $table.monto,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get cancelado => $composableBuilder(
+    column: $table.cancelado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notas => $composableBuilder(
+    column: $table.notas,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get creadoEn => $composableBuilder(
+    column: $table.creadoEn,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ClientesTableFilterComposer get clienteId {
+    final $$ClientesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clienteId,
+      referencedTable: $db.clientes,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClientesTableFilterComposer(
+            $db: $db,
+            $table: $db.clientes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EquiposTableFilterComposer get equipoId {
+    final $$EquiposTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.equipoId,
+      referencedTable: $db.equipos,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EquiposTableFilterComposer(
+            $db: $db,
+            $table: $db.equipos,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> cargoAplicacionesRefs(
+    Expression<bool> Function($$CargoAplicacionesTableFilterComposer f) f,
+  ) {
+    final $$CargoAplicacionesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.cargoAplicaciones,
+      getReferencedColumn: (t) => t.cargoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CargoAplicacionesTableFilterComposer(
+            $db: $db,
+            $table: $db.cargoAplicaciones,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$CargosTableOrderingComposer
+    extends Composer<_$AppDatabase, $CargosTable> {
+  $$CargosTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fecha => $composableBuilder(
+    column: $table.fecha,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get concepto => $composableBuilder(
+    column: $table.concepto,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get monto => $composableBuilder(
+    column: $table.monto,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get cancelado => $composableBuilder(
+    column: $table.cancelado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notas => $composableBuilder(
+    column: $table.notas,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get creadoEn => $composableBuilder(
+    column: $table.creadoEn,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ClientesTableOrderingComposer get clienteId {
+    final $$ClientesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clienteId,
+      referencedTable: $db.clientes,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClientesTableOrderingComposer(
+            $db: $db,
+            $table: $db.clientes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EquiposTableOrderingComposer get equipoId {
+    final $$EquiposTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.equipoId,
+      referencedTable: $db.equipos,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EquiposTableOrderingComposer(
+            $db: $db,
+            $table: $db.equipos,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CargosTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CargosTable> {
+  $$CargosTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fecha =>
+      $composableBuilder(column: $table.fecha, builder: (column) => column);
+
+  GeneratedColumn<String> get concepto =>
+      $composableBuilder(column: $table.concepto, builder: (column) => column);
+
+  GeneratedColumn<int> get monto =>
+      $composableBuilder(column: $table.monto, builder: (column) => column);
+
+  GeneratedColumn<bool> get cancelado =>
+      $composableBuilder(column: $table.cancelado, builder: (column) => column);
+
+  GeneratedColumn<String> get notas =>
+      $composableBuilder(column: $table.notas, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get creadoEn =>
+      $composableBuilder(column: $table.creadoEn, builder: (column) => column);
+
+  $$ClientesTableAnnotationComposer get clienteId {
+    final $$ClientesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clienteId,
+      referencedTable: $db.clientes,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClientesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.clientes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EquiposTableAnnotationComposer get equipoId {
+    final $$EquiposTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.equipoId,
+      referencedTable: $db.equipos,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EquiposTableAnnotationComposer(
+            $db: $db,
+            $table: $db.equipos,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> cargoAplicacionesRefs<T extends Object>(
+    Expression<T> Function($$CargoAplicacionesTableAnnotationComposer a) f,
+  ) {
+    final $$CargoAplicacionesTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.cargoAplicaciones,
+          getReferencedColumn: (t) => t.cargoId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CargoAplicacionesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.cargoAplicaciones,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$CargosTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CargosTable,
+          Cargo,
+          $$CargosTableFilterComposer,
+          $$CargosTableOrderingComposer,
+          $$CargosTableAnnotationComposer,
+          $$CargosTableCreateCompanionBuilder,
+          $$CargosTableUpdateCompanionBuilder,
+          (Cargo, $$CargosTableReferences),
+          Cargo,
+          PrefetchHooks Function({
+            bool clienteId,
+            bool equipoId,
+            bool cargoAplicacionesRefs,
+          })
+        > {
+  $$CargosTableTableManager(_$AppDatabase db, $CargosTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CargosTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CargosTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CargosTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> clienteId = const Value.absent(),
+                Value<DateTime> fecha = const Value.absent(),
+                Value<String> concepto = const Value.absent(),
+                Value<int> monto = const Value.absent(),
+                Value<int?> equipoId = const Value.absent(),
+                Value<bool> cancelado = const Value.absent(),
+                Value<String?> notas = const Value.absent(),
+                Value<DateTime> creadoEn = const Value.absent(),
+              }) => CargosCompanion(
+                id: id,
+                clienteId: clienteId,
+                fecha: fecha,
+                concepto: concepto,
+                monto: monto,
+                equipoId: equipoId,
+                cancelado: cancelado,
+                notas: notas,
+                creadoEn: creadoEn,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int clienteId,
+                required DateTime fecha,
+                required String concepto,
+                required int monto,
+                Value<int?> equipoId = const Value.absent(),
+                Value<bool> cancelado = const Value.absent(),
+                Value<String?> notas = const Value.absent(),
+                required DateTime creadoEn,
+              }) => CargosCompanion.insert(
+                id: id,
+                clienteId: clienteId,
+                fecha: fecha,
+                concepto: concepto,
+                monto: monto,
+                equipoId: equipoId,
+                cancelado: cancelado,
+                notas: notas,
+                creadoEn: creadoEn,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$CargosTable, Cargo>(table),
+                  $$CargosTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({
+                clienteId = false,
+                equipoId = false,
+                cargoAplicacionesRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (cargoAplicacionesRefs) db.cargoAplicaciones,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (clienteId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.clienteId,
+                            referencedTable: $$CargosTableReferences
+                                ._clienteIdTable(db),
+                            referencedColumn: $$CargosTableReferences
+                                ._clienteIdTable(db)
+                                .id,
+                          ) as T;
+                        }
+                        if (equipoId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.equipoId,
+                            referencedTable: $$CargosTableReferences
+                                ._equipoIdTable(db),
+                            referencedColumn: $$CargosTableReferences
+                                ._equipoIdTable(db)
+                                .id,
+                          ) as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (cargoAplicacionesRefs)
+                        await $_getPrefetchedDataByColumns<
+                          Cargo,
+                          $CargosTable,
+                          CargoAplicacion,
+                          $CargoAplicacionesTable
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CargosTableReferences
+                              ._cargoAplicacionesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CargosTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).cargoAplicacionesRefs,
+                          currentColumn: 'id',
+                          referencedColumn: 'cargo_id',
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$CargosTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CargosTable,
+      Cargo,
+      $$CargosTableFilterComposer,
+      $$CargosTableOrderingComposer,
+      $$CargosTableAnnotationComposer,
+      $$CargosTableCreateCompanionBuilder,
+      $$CargosTableUpdateCompanionBuilder,
+      (Cargo, $$CargosTableReferences),
+      Cargo,
+      PrefetchHooks Function({
+        bool clienteId,
+        bool equipoId,
+        bool cargoAplicacionesRefs,
+      })
+    >;
+typedef $$CargoAplicacionesTableCreateCompanionBuilder =
+    CargoAplicacionesCompanion Function({
+      required int pagoId,
+      required int cargoId,
+      required int monto,
+      Value<int> rowid,
+    });
+typedef $$CargoAplicacionesTableUpdateCompanionBuilder =
+    CargoAplicacionesCompanion Function({
+      Value<int> pagoId,
+      Value<int> cargoId,
+      Value<int> monto,
+      Value<int> rowid,
+    });
+
+final class $$CargoAplicacionesTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $CargoAplicacionesTable,
+          CargoAplicacion
+        > {
+  $$CargoAplicacionesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $PagosTable _pagoIdTable(_$AppDatabase db) =>
+      db.pagos.createAlias('cargo_aplicaciones__pago_id__pagos__id');
+
+  $$PagosTableProcessedTableManager get pagoId {
+    final $_column = $_itemColumn<int>('pago_id')!;
+
+    final manager = $$PagosTableTableManager(
+      $_db,
+      $_db.pagos,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_pagoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $CargosTable _cargoIdTable(_$AppDatabase db) =>
+      db.cargos.createAlias('cargo_aplicaciones__cargo_id__cargos__id');
+
+  $$CargosTableProcessedTableManager get cargoId {
+    final $_column = $_itemColumn<int>('cargo_id')!;
+
+    final manager = $$CargosTableTableManager(
+      $_db,
+      $_db.cargos,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_cargoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$CargoAplicacionesTableFilterComposer
+    extends Composer<_$AppDatabase, $CargoAplicacionesTable> {
+  $$CargoAplicacionesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get monto => $composableBuilder(
+    column: $table.monto,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$PagosTableFilterComposer get pagoId {
+    final $$PagosTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pagoId,
+      referencedTable: $db.pagos,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagosTableFilterComposer(
+            $db: $db,
+            $table: $db.pagos,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CargosTableFilterComposer get cargoId {
+    final $$CargosTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cargoId,
+      referencedTable: $db.cargos,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CargosTableFilterComposer(
+            $db: $db,
+            $table: $db.cargos,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CargoAplicacionesTableOrderingComposer
+    extends Composer<_$AppDatabase, $CargoAplicacionesTable> {
+  $$CargoAplicacionesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get monto => $composableBuilder(
+    column: $table.monto,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$PagosTableOrderingComposer get pagoId {
+    final $$PagosTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pagoId,
+      referencedTable: $db.pagos,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagosTableOrderingComposer(
+            $db: $db,
+            $table: $db.pagos,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CargosTableOrderingComposer get cargoId {
+    final $$CargosTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cargoId,
+      referencedTable: $db.cargos,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CargosTableOrderingComposer(
+            $db: $db,
+            $table: $db.cargos,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CargoAplicacionesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CargoAplicacionesTable> {
+  $$CargoAplicacionesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get monto =>
+      $composableBuilder(column: $table.monto, builder: (column) => column);
+
+  $$PagosTableAnnotationComposer get pagoId {
+    final $$PagosTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pagoId,
+      referencedTable: $db.pagos,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagosTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pagos,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CargosTableAnnotationComposer get cargoId {
+    final $$CargosTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cargoId,
+      referencedTable: $db.cargos,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CargosTableAnnotationComposer(
+            $db: $db,
+            $table: $db.cargos,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CargoAplicacionesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CargoAplicacionesTable,
+          CargoAplicacion,
+          $$CargoAplicacionesTableFilterComposer,
+          $$CargoAplicacionesTableOrderingComposer,
+          $$CargoAplicacionesTableAnnotationComposer,
+          $$CargoAplicacionesTableCreateCompanionBuilder,
+          $$CargoAplicacionesTableUpdateCompanionBuilder,
+          (CargoAplicacion, $$CargoAplicacionesTableReferences),
+          CargoAplicacion,
+          PrefetchHooks Function({bool pagoId, bool cargoId})
+        > {
+  $$CargoAplicacionesTableTableManager(
+    _$AppDatabase db,
+    $CargoAplicacionesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CargoAplicacionesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CargoAplicacionesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CargoAplicacionesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> pagoId = const Value.absent(),
+                Value<int> cargoId = const Value.absent(),
+                Value<int> monto = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CargoAplicacionesCompanion(
+                pagoId: pagoId,
+                cargoId: cargoId,
+                monto: monto,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required int pagoId,
+                required int cargoId,
+                required int monto,
+                Value<int> rowid = const Value.absent(),
+              }) => CargoAplicacionesCompanion.insert(
+                pagoId: pagoId,
+                cargoId: cargoId,
+                monto: monto,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$CargoAplicacionesTable, CargoAplicacion>(table),
+                  $$CargoAplicacionesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({pagoId = false, cargoId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (pagoId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.pagoId,
+                        referencedTable: $$CargoAplicacionesTableReferences
+                            ._pagoIdTable(db),
+                        referencedColumn: $$CargoAplicacionesTableReferences
+                            ._pagoIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+                    if (cargoId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.cargoId,
+                        referencedTable: $$CargoAplicacionesTableReferences
+                            ._cargoIdTable(db),
+                        referencedColumn: $$CargoAplicacionesTableReferences
+                            ._cargoIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$CargoAplicacionesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CargoAplicacionesTable,
+      CargoAplicacion,
+      $$CargoAplicacionesTableFilterComposer,
+      $$CargoAplicacionesTableOrderingComposer,
+      $$CargoAplicacionesTableAnnotationComposer,
+      $$CargoAplicacionesTableCreateCompanionBuilder,
+      $$CargoAplicacionesTableUpdateCompanionBuilder,
+      (CargoAplicacion, $$CargoAplicacionesTableReferences),
+      CargoAplicacion,
+      PrefetchHooks Function({bool pagoId, bool cargoId})
     >;
 typedef $$HistorialEstadosTableCreateCompanionBuilder =
     HistorialEstadosCompanion Function({
@@ -10146,6 +12200,10 @@ class $AppDatabaseManager {
       $$PagosTableTableManager(_db, _db.pagos);
   $$PagoAplicacionesTableTableManager get pagoAplicaciones =>
       $$PagoAplicacionesTableTableManager(_db, _db.pagoAplicaciones);
+  $$CargosTableTableManager get cargos =>
+      $$CargosTableTableManager(_db, _db.cargos);
+  $$CargoAplicacionesTableTableManager get cargoAplicaciones =>
+      $$CargoAplicacionesTableTableManager(_db, _db.cargoAplicaciones);
   $$HistorialEstadosTableTableManager get historialEstados =>
       $$HistorialEstadosTableTableManager(_db, _db.historialEstados);
   $$GastosTableTableManager get gastos =>
