@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/marca.dart';
+import '../core/version.dart';
 import '../providers/sesion.dart';
 import '../providers/zoom.dart';
 import '../screens/sesion/acceso_screen.dart' show etiquetaPerfil;
@@ -106,7 +107,19 @@ class PanelLateral extends ConsumerWidget {
               onRestablecer: control.restablecer,
             ),
             _UsuarioSesion(extendido: extendido),
-            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                extendido ? 'Versión $versionApp' : versionApp,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Outfit',
+                  fontSize: 11,
+                  color: ColoresNetMax.crema.withValues(alpha: 0.45),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
           ],
                 ),
               ),

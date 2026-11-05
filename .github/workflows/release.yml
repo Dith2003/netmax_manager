@@ -1,0 +1,168 @@
+name: Versión instalable
+
+# Compila el instalador de Windows y el APK de Android y los publica en
+# GitHub > Releases (página "Versiones" del repositorio).
+#
+# - Al subir una etiqueta v*, p. ej. `git tag v1.0.0 && git push origin v1.0.0`.
+# - Al subir cambios a una rama release/... (p. ej. release/v1.0.0): publica una versión
+#   de prueba vX.Y.Z-prueba.N (N = número de ejecución).
+# - O a mano desde GitHub > Actions > "Versión instalable" > Run workflow,
+#   indicando la etiqueta (p. ej. v1.0.0-prueba.1). Las que llevan "-" se publican
+#   como versión de prueba (pre-release).
+on:
+  push:
+    tags: ['v*']
+    branches: ['release/**']
+  workflow_dispatch:
+    inputs:
+      etiqueta:
+        description: 'Etiqueta de la versión (p. ej. v1.0.0-prueba.1)'
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  FLUTTER_VERSION: 3.47.9
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Versión de pubspec.yaml
+        id: version
+        shell: bash
+        run: echo "valor=$(grep -E '^version:' pubspec.yaml | sed -E 's/version:[[:space:]]*([0-9.]+).*/\1/')" >> "$GITHUB_OUTPUT"
+
+      - name: Compilar
+        run: |
+          flutter pub get
+          flutter build windows --release
+
+      - name: Agregar el runtime de Visual C++
+        # Sin estas DLL la app no abre en equipos que no tienen instalado
+        # "Microsoft Visual C++ Redistributable".
+        shell: pwsh
+        run: |
+          $destino = "build\windows\x64\runner\Release"
+          foreach ($dll in "msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll") {
+            Copy-Item "C:\Windows\System32\$dll" $destino
+          }
+          Get-ChildItem $destino
+
+      - name: Crear el instalador
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "C:\Program Files (x86)\Inno Setup 6\ISCC.exe")) {
+            choco install innosetup -y --no-progress
+          }
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
+            "/DVersion=${{ steps.version.outputs.valor }}" `
+            "/DOrigen=$PWD\build\windows\x64\runner\Release" `
+            "/DSalida=$PWD\salida" `
+            windows\instalador\netmax.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Versión portátil (zip)
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "build\windows\x64\runner\Release\*" `
+            -DestinationPath "salida\NET_MAX_Portatil_${{ steps.version.outputs.valor }}.zip"
+          Get-ChildItem salida
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: salida/*
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Llave de firma (si está configurada)
+        # Secretos del repositorio: NETMAX_KEYSTORE_BASE64, NETMAX_KEYSTORE_PASSWORD,
+        # NETMAX_KEY_ALIAS y NETMAX_KEY_PASSWORD. Sin ellos se firma con la llave
+        # de depuración (sirve para probar, no para la versión definitiva).
+        env:
+          LLAVE: ${{ secrets.NETMAX_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$LLAVE" ]; then
+            echo "$LLAVE" | base64 -d > "$RUNNER_TEMP/netmax.jks"
+            echo "NETMAX_KEYSTORE=$RUNNER_TEMP/netmax.jks" >> "$GITHUB_ENV"
+            echo "Se firma con la llave de NET_MAX."
+          else
+            echo "::warning::Sin llave de firma: el APK se firma con la llave de depuración (solo para pruebas)."
+          fi
+
+      - name: Compilar el APK
+        env:
+          NETMAX_KEYSTORE_PASSWORD: ${{ secrets.NETMAX_KEYSTORE_PASSWORD }}
+          NETMAX_KEY_ALIAS: ${{ secrets.NETMAX_KEY_ALIAS }}
+          NETMAX_KEY_PASSWORD: ${{ secrets.NETMAX_KEY_PASSWORD }}
+        run: |
+          flutter pub get
+          flutter build apk --release
+          version=$(grep -E '^version:' pubspec.yaml | sed -E 's/version:[[:space:]]*([0-9.]+).*/\1/')
+          mkdir -p salida
+          cp build/app/outputs/flutter-apk/app-release.apk "salida/NET_MAX_${version}.apk"
+          ls -l salida
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: salida/*
+
+  publicar:
+    needs: [windows, android]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Etiqueta de la versión
+        shell: bash
+        run: |
+          version=$(grep -E '^version:' pubspec.yaml | sed -E 's/version:[[:space:]]*([0-9.]+).*/\1/')
+          if [ -n "${{ github.event.inputs.etiqueta }}" ]; then
+            etiqueta="${{ github.event.inputs.etiqueta }}"
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
+            etiqueta="${{ github.ref_name }}"
+          else
+            etiqueta="v${version}-prueba.${{ github.run_number }}"
+          fi
+          echo "ETIQUETA=$etiqueta" >> "$GITHUB_ENV"
+          echo "Etiqueta: $etiqueta"
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: archivos
+          merge-multiple: true
+
+      - name: Publicar en Versiones (Releases)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.ETIQUETA }}
+          target_commitish: ${{ github.sha }}
+          name: NET_MAX ${{ env.ETIQUETA }}
+          prerelease: ${{ contains(env.ETIQUETA, '-') }}
+          body_path: docs/INSTALACION.md
+          files: archivos/*

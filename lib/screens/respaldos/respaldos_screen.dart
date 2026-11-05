@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart' show ShareParams, SharePlus, XFile;
 
 import '../../core/fechas.dart';
+import '../../core/version.dart';
 import '../../data/respaldos/respaldo_service.dart';
 import '../../providers/providers.dart';
 import '../../providers/sesion.dart';
@@ -168,6 +169,11 @@ class _RespaldosScreenState extends ConsumerState<RespaldosScreen> {
             if (_trabajando) const LinearProgressIndicator(),
             Card(margin: EdgeInsets.zero, child: estado),
             const SizedBox(height: 16),
+            Text(
+              'Versión de la app: $versionApp',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 8),
             const Text(
               'Un respaldo es una copia de toda la información: clientes, pagos, meses, '
               'cargos, instalaciones y equipos. Guárdalo fuera del equipo (Google Drive, '
