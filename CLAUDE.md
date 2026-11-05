@@ -93,6 +93,9 @@ test/
   capturas_test.dart  # capturas de pantalla con datos simulados (solo con CAPTURAS=1)
 docs/
   schema.sql     # referencia original; la fuente de verdad es lib/data/db/database.dart
+  INSTALACION.md # cómo instalar (también es el texto de cada versión publicada)
+  PRUEBAS_v1.md  # lista de pruebas de la versión instalable
+windows/instalador/netmax.iss  # instalador Inno Setup (AppId fijo: no cambiarlo)
 ```
 
 ## Reglas de negocio (fuente de verdad)
@@ -241,6 +244,23 @@ docs/
   imprime en el log entre `INICIO_CAPTURAS`/`FIN_CAPTURAS`, una línea `ARCHIVO <ruta> <base64>`
   por imagen (un solo base64 grande se corrompía: GitHub enmascara fragmentos con `***`).
   También se suben como artefacto `capturas` (para descargarlas desde GitHub).
+
+## Versión instalable
+- Versión en `pubspec.yaml` (`version: X.Y.Z+N`) y en `lib/core/version.dart` (`versionApp`, se
+  muestra en el acceso, el panel y Respaldos; `test/version_test.dart` verifica que coincidan).
+  Para una versión nueva: subir ambas (y el `+N`, que Android usa para actualizar).
+- `.github/workflows/release.yml` corre al subir una etiqueta `v*` (con "-" = versión de prueba):
+  compila en Windows (`flutter build windows`, copia `msvcp140/vcruntime140/vcruntime140_1.dll`,
+  instalador Inno Setup `NET_MAX_Instalador_X.Y.Z.exe` + zip portátil) y en Android
+  (`NET_MAX_X.Y.Z.apk`) y los publica en GitHub Releases con `docs/INSTALACION.md` como texto.
+  `workflow_dispatch` solo sirve cuando el flujo ya está en `main`.
+- Windows: se instala por usuario en `%LOCALAPPDATA%\Programs\NET_MAX` sin pedir administrador;
+  los datos están en `Documentos\netmax.sqlite` (no se borran al actualizar/desinstalar). Sin
+  firma digital: SmartScreen avisa ("Más información → Ejecutar de todas formas").
+- Android: `applicationId com.netmax.netmax_manager` (no cambiar). Firma desde
+  `android/key.properties` o secretos `NETMAX_KEYSTORE_BASE64/_PASSWORD`, `NETMAX_KEY_ALIAS`,
+  `NETMAX_KEY_PASSWORD`; sin llave se firma con la de depuración (solo pruebas: cambiar de llave
+  obliga a desinstalar y se pierden los datos del celular → respaldar antes).
 
 ## Flujo de trabajo
 - Cada sprint en una rama (`sprint-N/nombre`) con Pull Request hacia `main`. La dueña revisa,

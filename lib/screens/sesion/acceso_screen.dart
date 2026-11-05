@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/marca.dart';
+import '../../core/version.dart';
 import '../../data/db/database.dart';
 import '../../data/repositories/usuarios_repository.dart';
 import '../../data/repositories/vencimientos_repository.dart' show OperacionNoPermitida;
@@ -70,6 +71,15 @@ class AccesoScreen extends ConsumerWidget {
                               : _IniciarSesion(usuarios: activos);
                         },
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Versión $versionApp',
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
+                      fontSize: 12,
+                      color: ColoresNetMax.crema.withValues(alpha: 0.6),
                     ),
                   ),
                 ],
