@@ -4,12 +4,15 @@ name: Versión instalable
 # GitHub > Releases (página "Versiones" del repositorio).
 #
 # - Al subir una etiqueta v*, p. ej. `git tag v1.0.0 && git push origin v1.0.0`.
+# - Al subir cambios a una rama release/... (p. ej. release/v1.0.0): publica una versión
+#   de prueba vX.Y.Z-prueba.N (N = número de ejecución).
 # - O a mano desde GitHub > Actions > "Versión instalable" > Run workflow,
 #   indicando la etiqueta (p. ej. v1.0.0-prueba.1). Las que llevan "-" se publican
 #   como versión de prueba (pre-release).
 on:
   push:
     tags: ['v*']
+    branches: ['release/**']
   workflow_dispatch:
     inputs:
       etiqueta:
@@ -21,7 +24,6 @@ permissions:
 
 env:
   FLUTTER_VERSION: 3.47.9
-  ETIQUETA: ${{ github.event.inputs.etiqueta || github.ref_name }}
 
 jobs:
   windows:
@@ -135,6 +137,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Etiqueta de la versión
+        shell: bash
+        run: |
+          version=$(grep -E '^version:' pubspec.yaml | sed -E 's/version:[[:space:]]*([0-9.]+).*/\1/')
+          if [ -n "${{ github.event.inputs.etiqueta }}" ]; then
+            etiqueta="${{ github.event.inputs.etiqueta }}"
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
+            etiqueta="${{ github.ref_name }}"
+          else
+            etiqueta="v${version}-prueba.${{ github.run_number }}"
+          fi
+          echo "ETIQUETA=$etiqueta" >> "$GITHUB_ENV"
+          echo "Etiqueta: $etiqueta"
 
       - uses: actions/download-artifact@v4
         with:

@@ -253,7 +253,9 @@ windows/instalador/netmax.iss  # instalador Inno Setup (AppId fijo: no cambiarlo
   compila en Windows (`flutter build windows`, copia `msvcp140/vcruntime140/vcruntime140_1.dll`,
   instalador Inno Setup `NET_MAX_Instalador_X.Y.Z.exe` + zip portátil) y en Android
   (`NET_MAX_X.Y.Z.apk`) y los publica en GitHub Releases con `docs/INSTALACION.md` como texto.
-  `workflow_dispatch` solo sirve cuando el flujo ya está en `main`.
+  También corre al subir cambios a una rama `release/...` (publica `vX.Y.Z-prueba.N`); Claude no
+  puede crear etiquetas desde su entorno, así que usa esa rama. `workflow_dispatch` solo sirve
+  cuando el flujo ya está en `main`.
 - Windows: se instala por usuario en `%LOCALAPPDATA%\Programs\NET_MAX` sin pedir administrador;
   los datos están en `Documentos\netmax.sqlite` (no se borran al actualizar/desinstalar). Sin
   firma digital: SmartScreen avisa ("Más información → Ejecutar de todas formas").
